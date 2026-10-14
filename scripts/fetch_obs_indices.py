@@ -3,7 +3,7 @@ import logging, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import pandas as pd
-from pbch.fetch.obs_indices import fetch_ao, fetch_rmm, mjo_features
+from dokayuki.fetch.obs_indices import fetch_ao, fetch_rmm, mjo_features
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 ao = fetch_ao(Path("state/ao.parquet"))
 rmm = fetch_rmm(Path("state/rmm.parquet"))

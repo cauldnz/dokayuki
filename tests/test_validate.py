@@ -6,8 +6,8 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from pbch.site.fixtures import make_state
-from pbch.validate import (FIELD_RANGES, ValidationError, check_bins, check_cdf, check_daily_fields,
+from dokayuki.site.fixtures import make_state
+from dokayuki.validate import (FIELD_RANGES, ValidationError, check_bins, check_cdf, check_daily_fields,
                            check_forecast_json, check_thresholds, implausible_skill)
 
 

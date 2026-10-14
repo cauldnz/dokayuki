@@ -5,7 +5,7 @@ resolves, the bibliographic data match, and the cited claim appears in the sourc
 the DOI and metadata are verified (Crossref) but the claim was confirmed only from the abstract or a
 secondary source because the full text was paywalled from the build container. Entries marked
 **no** or **UNVERIFIED** are kept in `references.bib` for the record but are **excluded from the
-site** by `pbch.site.references` (status column is what it reads). Check performed 2026-10-14 via
+site** by `dokayuki.site.references` (status column is what it reads). Check performed 2026-10-14 via
 Crossref, doi.org, OpenAlex/Semantic Scholar abstracts, J-STAGE, arXiv, NSF-PAR and PMC full texts.
 
 | key | citation | DOI | claim it supports | status | checked | notes |

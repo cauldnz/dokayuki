@@ -1,7 +1,6 @@
 name: tests
 on:
   push:
-    paths: ["pbc-hokkaido/**", ".github/workflows/tests.yml"]
   pull_request:
   workflow_dispatch:
 concurrency:
@@ -11,7 +10,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 40
-    defaults: { run: { working-directory: pbc-hokkaido } }
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -33,5 +31,5 @@ jobs:
         with:
           name: design-qa-and-validation
           path: |
-            pbc-hokkaido/docs/screenshots/*.png
-            pbc-hokkaido/validation_report.md
+            docs/screenshots/*.png
+            validation_report.md

@@ -8,14 +8,14 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from pbch.cdf import combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
-from pbch.debiaspp import CANDIDATES, debiaspp, tune_debiaspp
-from pbch.grid import cos_weights, domain_lattice, stack_targets, unstack_targets
-from pbch.config import Box
-from pbch.persistpp import persistpp
-from pbch.project import project_cdf
-from pbch.synth import SynthSpec, make_forecasts, make_truth_weekly
-from pbch.thresholds import indicators, observed_thresholds
+from dokayuki.cdf import combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
+from dokayuki.debiaspp import CANDIDATES, debiaspp, tune_debiaspp
+from dokayuki.grid import cos_weights, domain_lattice, stack_targets, unstack_targets
+from dokayuki.config import Box
+from dokayuki.persistpp import persistpp
+from dokayuki.project import project_cdf
+from dokayuki.synth import SynthSpec, make_forecasts, make_truth_weekly
+from dokayuki.thresholds import indicators, observed_thresholds
 from reference_port import (ref_debiaspp, ref_percentile_for_date, ref_persistpp, ref_project, ref_tuner_select)
 
 LEAD, ECMWF_DELTA, START_DELTA = 19, 18, 27
@@ -49,7 +49,7 @@ def grid_case():
     fc_cdf = fc_cdf.assign_coords(time=fc["issue"].values).rename({"time": "issuance_date"})
     n_iss, n_hy = rf.sizes["issue"], rf.sizes["hyear"]
     rf_full = rf.stack(time=("issue", "hyear"))
-    from pbch.weekly import forecast_delta
+    from dokayuki.weekly import forecast_delta
     yrs = np.array([iss.year + int(hy) for iss, hy in rf_full.get_index("time")])
     mons = np.array([iss.month for iss, _ in rf_full.get_index("time")])
     days = np.array([iss.day for iss, _ in rf_full.get_index("time")])

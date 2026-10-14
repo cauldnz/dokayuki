@@ -5,8 +5,8 @@ Usage: python scripts/pull_era5_15.py --fields msl,t2m,tp,sst --start 1979-10-15
 import argparse, logging, sys, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from pbch.config import RegionConfig
-from pbch.fetch.era5 import estimate_pull, pull_daily_domain, pull_land_sea_mask
+from dokayuki.config import RegionConfig
+from dokayuki.fetch.era5 import estimate_pull, pull_daily_domain, pull_land_sea_mask
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 p = argparse.ArgumentParser()

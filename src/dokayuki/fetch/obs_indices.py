@@ -25,7 +25,7 @@ RMM_URL_LEGACY = "http://www.bom.gov.au/climate/mjo/graphics/rmm.74toRealtime.tx
 RMM_IRI_URL = ("https://iridl.ldeo.columbia.edu/SOURCES/.BoM/.MJO/.RMM/"
                ".RMM1/.RMM2/.phase/.amplitude/T/(1%20Jun%201974)/last/RANGE/"
                "%5BRMM1%20RMM2%20phase%20amplitude%5D%5BT%5Dtable:/T/toS/data.tsv")
-UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36 pbc-hokkaido"
+UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36 dokayuki"
 MISSING = 1.0e35
 
 

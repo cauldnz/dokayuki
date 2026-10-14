@@ -5,15 +5,15 @@ import pytest
 import xarray as xr
 
 from conftest import GT_DELTA, K, LEAD
-from pbch.cdf import combine_forecast_reforecast, forecast_to_time, lagged_ensemble, members_to_cdf, reforecast_to_time
-from pbch.debiaspp import tune_debiaspp
-from pbch.duet import duet
-from pbch.pbc import run_pbc
-from pbch.persistpp import persistpp
-from pbch.project import cdf_to_bins, project_cdf
-from pbch.thresholds import indicators, model_thresholds, observed_thresholds
-from pbch.validate import check_bins, check_cdf, check_thresholds
-from pbch.weekly import weekly_from_daily
+from dokayuki.cdf import combine_forecast_reforecast, forecast_to_time, lagged_ensemble, members_to_cdf, reforecast_to_time
+from dokayuki.debiaspp import tune_debiaspp
+from dokayuki.duet import duet
+from dokayuki.pbc import run_pbc
+from dokayuki.persistpp import persistpp
+from dokayuki.project import cdf_to_bins, project_cdf
+from dokayuki.thresholds import indicators, model_thresholds, observed_thresholds
+from dokayuki.validate import check_bins, check_cdf, check_thresholds
+from dokayuki.weekly import weekly_from_daily
 
 
 def test_thresholds_monotone_and_use_only_prior_years(synth):

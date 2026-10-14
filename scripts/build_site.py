@@ -2,9 +2,9 @@
 import argparse, json, sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-from pbch.site.build import build
-from pbch.site.fixtures import make_state
-from pbch.validate import check_forecast_json
+from dokayuki.site.build import build
+from dokayuki.site.fixtures import make_state
+from dokayuki.validate import check_forecast_json
 p = argparse.ArgumentParser(); p.add_argument("--fixture"); p.add_argument("--forecast"); p.add_argument("--out", default="site/build")
 a = p.parse_args()
 d = make_state(a.fixture) if a.fixture else json.loads(Path(a.forecast).read_text())

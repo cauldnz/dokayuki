@@ -1,7 +1,7 @@
 # Site identity, links and brand assets (no hard-coding in templates).
 site_title: "Hokkaido Powder Outlook"
 tagline: "weeks 3 & 4"
-site_url: "https://cauldnz.github.io/pbc-hokkaido/"
+site_url: "https://cauldnz.github.io/dokayuki/"
 author_name: "Chris Auld"
 author_url: "https://hokkaidowilds.org/author/chris/"      # TODO confirm author page URL
 hw_home_url: "https://hokkaidowilds.org"

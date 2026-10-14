@@ -9,9 +9,9 @@ import xarray as xr
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from pbch.cdf import combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time  # noqa: E402
-from pbch.synth import SynthSpec, make_forecasts, make_truth_weekly  # noqa: E402
-from pbch.thresholds import indicators, observed_thresholds  # noqa: E402
+from dokayuki.cdf import combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time  # noqa: E402
+from dokayuki.synth import SynthSpec, make_forecasts, make_truth_weekly  # noqa: E402
+from dokayuki.thresholds import indicators, observed_thresholds  # noqa: E402
 
 LEAD = 19
 GT_DELTA = 18 + 9   # reference measurement lag (parity); operational default is 10

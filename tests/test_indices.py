@@ -3,10 +3,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from pbch.config import Box, IndexDef, load_indices
-from pbch.grid import area_mean, domain_lattice, box_mask, coarsen_block_mean
-from pbch.indices import all_indices, cold_day_precip, index_value
-from pbch.weekly import weekly_from_daily
+from dokayuki.config import Box, IndexDef, load_indices
+from dokayuki.grid import area_mean, domain_lattice, box_mask, coarsen_block_mean
+from dokayuki.indices import all_indices, cold_day_precip, index_value
+from dokayuki.weekly import weekly_from_daily
 
 
 def _field(value_fn, times=3):

@@ -10,7 +10,7 @@ correctable model error at weeks 3–4 and turns it into useful skill for Hokkai
 - **The headline metric is the lift**: ΔRPSS (ΔBSS for the big week) of the PBC product minus
   the **operationally debiased** model, and minus the **raw** model, per index and for the snow
   outlook, at weeks 3 and 4, with block-bootstrap 95 % confidence intervals
-  (`pbch.score.lift`). Every skill table and dashboard badge shows the delta first; a
+  (`dokayuki.score.lift`). Every skill table and dashboard badge shows the delta first; a
   non-significant lift is reported as "no demonstrated improvement over the raw model" even when
   absolute skill is positive.
 - **Three layers, kept apart**: the dynamical model's own skill, the lift from PBC, and the lift
@@ -22,10 +22,10 @@ correctable model error at weeks 3–4 and turns it into useful skill for Hokkai
 ### Overfitting guardrails
 
 The sample is about ten winters of ~13 DJF weeks, autocorrelated, so the effective sample is
-smaller still (`pbch.score.effective_n`). Rules, applied now and to all later tuning:
+smaller still (`dokayuki.score.effective_n`). Rules, applied now and to all later tuning:
 
 1. **Locked final-exam block.** Winters 2023/24, 2024/25 and 2025/26 are sealed
-   (`config/snow.yaml: locked_final_exam_winters`; `pbch.experiments.assert_not_locked`). They are
+   (`config/snow.yaml: locked_final_exam_winters`; `dokayuki.experiments.assert_not_locked`). They are
    evaluated once at the end of v1 and reported as the headline out-of-sample result. If any
    decision is later made after looking at them, the write-up says so.
 2. **Nested, time-blocked cross-validation** (blocked by winter) for every tuning choice: the
@@ -34,7 +34,7 @@ smaller still (`pbch.score.effective_n`). Rules, applied now and to all later tu
    tuning is an experiment under rule 4.
 4. **Experiment log and budget.** `experiments/log.csv` records every configuration evaluated
    (date, hypothesis, settings, CV score). The number of trials is reported beside the best
-   result and a deflated best-of-N skill is shown (`pbch.score.deflated_skill`, after White 2000
+   result and a deflated best-of-N skill is shown (`dokayuki.score.deflated_skill`, after White 2000
    and Hansen 2005).
 5. **Prefer simplicity.** A more complex model is adopted only if it beats the simpler one by
    more than its confidence interval in nested CV.
@@ -81,7 +81,7 @@ surface and the cold air at about 1.5 km, not the cold air alone.**
 | 4 Fuel / instability | SST − T850 | `SJI` (primary), `SJI13` (new: days in the week with SST − T850 ≥ 13 °C from daily member data); `SJC` kept as a diagnostic only | "Warm sea + freezing air = snow factory" |
 | 5 Delivery | orographic lift, JPCZ convergence | static; explained in nerd mode, not forecast at 1.5° | "Mountains wring it out" |
 
-Definitions of the new indices (`config/indices.yaml`, `pbch.indices`): `U10_60N` is the zonal
+Definitions of the new indices (`config/indices.yaml`, `dokayuki.indices`): `U10_60N` is the zonal
 mean of 10 hPa zonal wind at the lattice latitude nearest 60°N, sign reversed; `UBI` is the
 weekly 500 hPa height anomaly (minus the day-of-year climatology, or the hindcast climatology for
 members) averaged over 45–70°N, 40–80°E **(verify: box pending the verified literature

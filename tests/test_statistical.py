@@ -6,13 +6,13 @@ import pytest
 import xarray as xr
 
 from conftest import GT_DELTA, K, LEAD
-from pbch.cdf import climatology_cdf, combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
-from pbch.pbc import run_pbc
-from pbch.project import cdf_to_bins
-from pbch.score import lift, reliability, rps, rpss
-from pbch.synth import SynthSpec, make_forecasts, make_truth_weekly
-from pbch.thresholds import indicators, observed_thresholds
-from pbch.validate import implausible_skill, permutation_null
+from dokayuki.cdf import climatology_cdf, combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
+from dokayuki.pbc import run_pbc
+from dokayuki.project import cdf_to_bins
+from dokayuki.score import lift, reliability, rps, rpss
+from dokayuki.synth import SynthSpec, make_forecasts, make_truth_weekly
+from dokayuki.thresholds import indicators, observed_thresholds
+from dokayuki.validate import implausible_skill, permutation_null
 
 
 def _build(spec):

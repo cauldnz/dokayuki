@@ -1,7 +1,7 @@
 """Assemble the forecast JSON from calibrated index CDFs, Stage-3 outputs and observed predictors.
 
 This is the one place where numbers become the page. Everything it emits is validated by
-``pbch.validate.check_forecast_json`` before the site is built; on failure the daily run keeps
+``dokayuki.validate.check_forecast_json`` before the site is built; on failure the daily run keeps
 the last good outlook and raises the stale banner.
 """
 from __future__ import annotations

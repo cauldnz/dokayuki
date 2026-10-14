@@ -11,11 +11,11 @@ import numpy as np, pandas as pd, xarray as xr
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
-from pbch.config import RegionConfig, SnowConfig, load_indices
-from pbch.build_truth import open_daily, weekly_truth
-from pbch.masks import load_lsm
-from pbch.state import State
-from pbch.weekly import season_of
+from dokayuki.config import RegionConfig, SnowConfig, load_indices
+from dokayuki.build_truth import open_daily, weekly_truth
+from dokayuki.masks import load_lsm
+from dokayuki.state import State
+from dokayuki.weekly import season_of
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
 cfg, snow, defs = RegionConfig.load(), SnowConfig.load(), load_indices()

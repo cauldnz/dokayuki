@@ -1,4 +1,6 @@
-# PBC-Hokkaido
+# dokayuki ドカ雪
+
+*A proper dump, three to four weeks out.* Codename and repo for the Hokkaido Powder Outlook.
 
 Week-3 and week-4 probabilistic outlooks of Hokkaido winter snowfall (Sea of Japan side:
 Niseko, Kutchan, Otaru, Sapporo) from circulation indices calibrated with Probabilistic Bias

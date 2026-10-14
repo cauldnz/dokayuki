@@ -5,14 +5,14 @@ import pytest
 import xarray as xr
 
 from conftest import GT_DELTA, K, LEAD
-from pbch.cdf import climatology_cdf, combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
-from pbch.debiaspp import debiaspp, tune_debiaspp
-from pbch.persistpp import persistpp, rolling_climatology
-from pbch.pbc import run_pbc
-from pbch.project import cdf_to_bins, project_cdf
-from pbch.score import rps, rpss
-from pbch.thresholds import indicators, observed_thresholds
-from pbch.weekly import forecast_delta, init_for_target
+from dokayuki.cdf import climatology_cdf, combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
+from dokayuki.debiaspp import debiaspp, tune_debiaspp
+from dokayuki.persistpp import persistpp, rolling_climatology
+from dokayuki.pbc import run_pbc
+from dokayuki.project import cdf_to_bins, project_cdf
+from dokayuki.score import rps, rpss
+from dokayuki.thresholds import indicators, observed_thresholds
+from dokayuki.weekly import forecast_delta, init_for_target
 
 
 def test_known_bias_is_removed(synth):

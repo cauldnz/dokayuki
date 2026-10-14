@@ -14,12 +14,12 @@ import pytest
 import xarray as xr
 
 from conftest import GT_DELTA, K, LEAD
-from pbch.config import load_indices
-from pbch.forecast import assemble_forecast
-from pbch.pbc import run_pbc
-from pbch.site.build import build
-from pbch.site.references import render as render_refs
-from pbch.validate import check_forecast_json
+from dokayuki.config import load_indices
+from dokayuki.forecast import assemble_forecast
+from dokayuki.pbc import run_pbc
+from dokayuki.site.build import build
+from dokayuki.site.references import render as render_refs
+from dokayuki.validate import check_forecast_json
 
 ROOT = Path(__file__).resolve().parents[1]
 CHROME = next(iter(sorted(glob.glob("/opt/pw-browsers/chromium*/chrome-linux*/chrome"))), None)

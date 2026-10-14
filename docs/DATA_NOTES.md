@@ -136,7 +136,7 @@ isentropic, oceanic}; `variable`; `level_value`; `forecast_type` ∈ {control_fo
 perturbed_forecast}; `leadtime_hour` (instants "456" and 24-h windows "432_456"); `area`
 [N, W, S, E]; `data_format` = grib. Reforecasts add `hyear`, `hmonth`, `hday`. Retrieve endpoint
 `/api/retrieve/v1/processes/s2s-forecasts`; client `ecmwf-datastores-client` (submit → request
-id → poll → download), which is what `src/pbch/fetch/s2s.py` wraps.
+id → poll → download), which is what `src/dokayuki/fetch/s2s.py` wraps.
 
 Real-time coverage on ECDS (init dates per year): ECMWF 104–105/yr 2015–2022 (Mon/Thu), 238 in
 2023 (daily from late June), daily since 2024. JMA 104/yr 2015–16 (Tue+Wed), 52–63/yr 2017–2022

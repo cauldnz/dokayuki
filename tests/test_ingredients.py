@@ -4,10 +4,10 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from pbch.config import Box, load_indices, load_stage_names
-from pbch.experiments import assert_not_locked
-from pbch.indices import ao_projection, nw_flow, sji_days, ural_blocking, zonal_mean_at
-from pbch.score import effective_n, lift
+from dokayuki.config import Box, load_indices, load_stage_names
+from dokayuki.experiments import assert_not_locked
+from dokayuki.indices import ao_projection, nw_flow, sji_days, ural_blocking, zonal_mean_at
+from dokayuki.score import effective_n, lift
 from test_indices import _field
 
 
