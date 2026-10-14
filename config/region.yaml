@@ -1,0 +1,38 @@
+# Region, grid, variables and time bookkeeping.
+grid:
+  resolution_deg: 1.5
+  # Lattice of the AI Weather Quest / reference repo ("global1_5"):
+  # latitude -90..90 and longitude 0..358.5 in steps of 1.5.
+  lat_origin: -90.0
+  lon_origin: 0.0
+  native_era5_deg: 0.25   # coarsen by factor 6 to reach 1.5
+domain:
+  # Contains every index box (Siberian High to the Aleutian Low).
+  lat: [21.0, 72.0]       # inclusive, on the 1.5 lattice
+  lon: [75.0, 225.0]      # 75E .. 135W, on the 1.5 lattice
+masks:
+  japan_land:    {lat: [30.0, 46.0], lon: [129.0, 146.0], land_only: true}
+  hokkaido_land: {lat: [41.0, 46.0], lon: [139.0, 146.0], land_only: true}
+time:
+  leads: [19, 26]            # target week starts at init + (lead - 1) days
+  aggregation_days: 7
+  truth_latency_days: 5      # ERA5T
+  issue_delay_days: 2        # we issue 2 days after init (S2S 48 h embargo)
+  # measurement_lag = aggregation + truth_latency - issue_delay (reference uses 9)
+  measurement_lag_days: 10
+  climatology_years: 20
+  threshold_day_offsets: [-4, -2, 0, 2, 4]
+variables:
+  model:
+    msl:  {long: mean_sea_level_pressure, agg: mean, units: Pa, precip_like: false}
+    t2m:  {long: 2m_temperature,          agg: mean, units: K,  precip_like: false}
+    tp:   {long: total_precipitation,     agg: sum,  units: m,  precip_like: true}
+    t850: {long: temperature_850hPa,      agg: mean, units: K,  precip_like: false}
+    z500: {long: geopotential_height_500hPa, agg: mean, units: m, precip_like: false}
+    sf:   {long: snowfall_water_equivalent, agg: sum, units: m, precip_like: true}
+  truth_extra:
+    sst:  {long: sea_surface_temperature, agg: mean, units: K}
+    u10hpa60n: {long: zonal_wind_10hPa_60N, agg: mean, units: "m s-1"}
+quantiles:
+  K_quintile: 5
+  K_extreme: 20

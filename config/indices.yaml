@@ -1,0 +1,65 @@
+# Circulation indices. Each is a cos(latitude)-weighted mean of a weekly field
+# over a box, with a sign so that "high = more Hokkaido snow".
+# Boxes are starting points from the literature; see docs/METHOD.md.
+indices:
+  SHI:
+    name: Siberian High intensity
+    field: msl
+    box: {lat: [40.0, 65.0], lon: [80.0, 120.0]}
+    sign: 1
+    units: hPa
+    scale: 0.01          # Pa -> hPa
+    plain: "Siberian High"
+  ALI:
+    name: Aleutian Low intensity
+    field: msl
+    box: {lat: [30.0, 65.0], lon: [160.0, 220.0]}
+    sign: -1             # report -(pressure): high = deep low
+    units: hPa
+    scale: 0.01
+    plain: "Aleutian Low"
+  MOI:
+    name: Winter monsoon index (Irkutsk minus Nemuro)
+    field: msl
+    point_difference:
+      a: {lat: 52.3, lon: 104.3}    # Irkutsk
+      b: {lat: 43.3, lon: 145.6}    # Nemuro
+    sign: 1
+    units: hPa
+    scale: 0.01
+    plain: "Monsoon gradient"
+  MOI_box:
+    name: Winter monsoon index (box variant)
+    field: msl
+    box_difference:
+      a: {lat: [45.0, 60.0], lon: [95.0, 115.0]}
+      b: {lat: [35.0, 50.0], lon: [140.0, 155.0]}
+    sign: 1
+    units: hPa
+    scale: 0.01
+    plain: "Monsoon gradient (box)"
+  SJC:
+    name: Sea-of-Japan cold air
+    field: t850
+    box: {lat: [38.0, 46.0], lon: [132.0, 141.0]}
+    sign: -1             # high = colder
+    units: K
+    scale: 1.0
+    plain: "Sea-of-Japan cold air"
+  SJI:
+    name: Sea-of-Japan instability (SST minus T850)
+    field: t850
+    sst_minus: true      # (persisted SST anomaly + SST climatology) - T850
+    box: {lat: [38.0, 46.0], lon: [132.0, 141.0]}
+    sign: 1
+    units: K
+    scale: 1.0
+    plain: "Instability over the sea"
+  EAT:
+    name: East Asian trough
+    field: z500
+    box: {lat: [30.0, 45.0], lon: [125.0, 145.0]}
+    sign: -1             # high = deeper trough
+    units: m
+    scale: 1.0
+    plain: "East Asian trough"

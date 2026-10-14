@@ -1,0 +1,37 @@
+# Snow-week target (SNOW-W) and the Stage-3 snow model.
+snow_w:
+  # ERA5 snowfall (water equivalent) summed over the week, averaged over
+  # western-Hokkaido land at native 0.25 deg before any coarsening.
+  field: sf
+  native_deg: 0.25
+  mask: {lat: [42.5, 44.5], lon: [140.0, 141.8], land_only: true}
+  alternatives:
+    cold_day_precip:
+      field: tp
+      t850_max_c: -6.0     # count a day only when box-mean T850 <= -6 C
+targets:
+  terciles: {K: 3}
+  big_snow_week: {K: 5, bin: top}      # P(top quintile)
+season:
+  training_months: [11, 12, 1, 2, 3]   # NDJFM rows
+  scoring_months: [12, 1, 2]           # DJF focus
+  backtest_winters: ["2016/17", "2025/26"]
+stage3:
+  features:
+    pbc_indices: [SHI, ALI, MOI, SJC, SJI, EAT]
+    index_summaries: [expected_quintile, p_top2]
+    observed: [SHI_obs, ALI_obs, MOI_obs, SJC_obs, SJI_obs, EAT_obs, soj_sst_anom, ao, mjo_amp, mjo_cos, mjo_sin, u10_60n, snow_recent]
+    season_terms: [doy_sin, doy_cos]
+  model:
+    tercile: {kind: multinomial_logistic, C_grid: [0.01, 0.03, 0.1, 0.3, 1.0]}
+    big_week: {kind: logistic, C_grid: [0.01, 0.03, 0.1, 0.3, 1.0]}
+    cv: {kind: time_blocked, block: winter, inner_folds: 3}
+    try_gbt: true          # keep only if it beats logistic out of sample
+  publish_rule: "snow outlook shown only if it beats climatology and raw-model baselines in the backtest"
+stations:
+  # AMeDAS stations for validation (JMA Public Data License; 出典：気象庁ホームページ)
+  - {name: Kutchan,  ja: 倶知安, lat: 42.90, lon: 140.75}
+  - {name: Sapporo,  ja: 札幌,   lat: 43.06, lon: 141.33}
+  - {name: Otaru,    ja: 小樽,   lat: 43.18, lon: 141.02}
+  - {name: Asahikawa, ja: 旭川,  lat: 43.76, lon: 142.37}
+  # Niseko: (verify) whether a snowfall-reporting AMeDAS station exists
