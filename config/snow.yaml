@@ -34,4 +34,5 @@ stations:
   - {name: Sapporo,  ja: 札幌,   lat: 43.06, lon: 141.33}
   - {name: Otaru,    ja: 小樽,   lat: 43.18, lon: 141.02}
   - {name: Asahikawa, ja: 旭川,  lat: 43.76, lon: 142.37}
-  # Niseko: (verify) whether a snowfall-reporting AMeDAS station exists
+  # Niseko (ニセコ 16272) is precipitation-only since 2010: no snowfall/depth. Nearest snow stations:
+  - {name: Rankoshi, ja: 蘭越,   lat: 42.81, lon: 140.54}

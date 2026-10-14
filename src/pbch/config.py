@@ -93,6 +93,7 @@ class IndexDef:
     box_difference: dict[str, Box] | None = None
     sst_minus: bool = False
     units: str = ""
+    offset: float = 0.0     # value = sign * scale * (raw - offset); e.g. 273.15 for K -> C
 
 
 def load_indices(config_dir: Path | None = None) -> dict[str, IndexDef]:
@@ -114,6 +115,7 @@ def load_indices(config_dir: Path | None = None) -> dict[str, IndexDef]:
             ),
             sst_minus=bool(d.get("sst_minus", False)),
             units=d.get("units", ""),
+            offset=float(d.get("offset", 0.0)),
         )
     return out
 

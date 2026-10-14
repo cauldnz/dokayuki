@@ -100,21 +100,64 @@ Container: 4 vCPU, 15 GB RAM, Python 3.13.16, `uv` 0.11.
 |---|---|---|---|---|
 | ECMWF extended-range, S2S database on ECDS (`ecmf`) | model fields + on-the-fly reforecasts | https://ecds.ecmwf.int/datasets/s2s-forecasts | CC BY 4.0 (attribution: "Contains modified ECMWF data") | 48 h embargo |
 | JMA (`rjtd`) via S2S database on ECDS | model fields + fixed 1991–2020 hindcasts | same | CC BY-NC 4.0 | 48 h |
-| ARCO-ERA5 (Google Cloud) | truth, SST, 10 hPa wind | `gs://gcp-public-data-arco-era5/ar/` | Copernicus C3S licence (free, attribution) | ERA5T ~5 days |
+| WeatherBench2 / ARCO ERA5 1.5° 6-hourly (Google Cloud) | bulk truth history to 2023-01-10 | `https://storage.googleapis.com/weatherbench2/datasets/era5/1959-2023_01_10-6h-240x121_equiangular_with_poles_conservative.zarr` | Copernicus C3S licence (free, attribution) | static (ends 2023-01-10) |
+| CDS ERA5 (daily statistics, pressure levels) | truth after 2023-01-10, snowfall at 0.25°, 10 hPa wind | https://cds.climate.copernicus.eu | C3S licence | ERA5T ~5 days |
 | CDS ERA5 | fallback truth | https://cds.climate.copernicus.eu | C3S licence | ~5 days |
 | NOAA CPC AO daily index | observed predictor | https://ftp.cpc.ncep.noaa.gov/cwlinks/norm.daily.ao.cdas.z1000.19500101_current.csv | US public domain | ~1 day |
-| BoM RMM MJO index | observed predictor | http://www.bom.gov.au/climate/mjo/graphics/rmm.74toRealtime.txt (needs browser UA); IRI mirror `SOURCES/.BoM/.MJO/.RMM/` | BoM: CC BY 4.0 (verify on page) | ~1–2 days |
+| BoM RMM MJO index | observed predictor | https://www.bom.gov.au/clim_data/IDCKGEM000/rmm.74toRealtime.txt (needs browser UA; to 2026-10-12 when probed); IRI mirror `SOURCES/.BoM/.MJO/.RMM/` | BoM: CC BY 4.0 (verify on page) | ~1–2 days |
 | JMA AMeDAS | station snow validation | https://www.data.jma.go.jp/risk/obsdl/ | JMA Public Data License; credit 出典：気象庁ホームページ | manual pull |
+
+## ERA5 source decision (deviation from the brief)
+
+The brief named ARCO-ERA5 as the primary ERA5 source. Probing the stores (2026-10-14) showed
+that every ARCO/WeatherBench2 Zarr is chunked as **one global field per time step** (or 8 steps
+for the 1.5° stores). Consequences:
+
+| Store | Grid | Chunk | Bytes per chunk (measured) | Verdict |
+|---|---|---|---|---|
+| `ar/full_37-1h-0p25deg-chunk-1.zarr-v3` (ARCO, hourly, to present) | 0.25° | (1 h, globe) | ~4 MB surface, ~150 MB for 37-level fields | far too heavy for bulk; only source of hourly snowfall and 10 hPa wind without a key |
+| `ar/1959-2022-6h-1440x721.zarr` | 0.25° 6-h | (1 step, globe) | 4 MB / 53 MB (13 levels) | no snowfall; too heavy for history |
+| WB2 `1959-2023_01_10-6h-240x121_…conservative.zarr` | **1.5°** (exactly the reference lattice) | (8 steps, globe) | msl 0.55, t2m 0.62, tp 0.83, sst 0.14, **t850/z500 7.8 MB** (all 13 levels) | **used for bulk history to 2023-01-10**: 2-D fields Oct–Apr 1979–2023 ≈ 9.6 GB; t850 DJF ≈ 15 GB; t850+z500 NDJFM ≈ 50 GB (needs go-ahead) |
+
+Measured throughput from the build container: ≈ 50–170 MB/s.
+
+So: **CDS is the primary operational ERA5 path** (keyed, area-subset requests are tiny: the
+daily-statistics datasets give daily snowfall over the SNOW-W box at 0.25°, and daily 1.5°
+fields plus 10 hPa wind by area), and the WB2 1.5° store is the free bulk-history path for the
+ERA5-era analysis and backtest truth up to 2023-01-10. Everything after 2023-01-10 (and all
+snowfall / 10 hPa wind) requires `CDSAPI_KEY`.
+
+## ECDS S2S request schema (probed 2026-10-14)
+
+Forms at `…/collections/s2s-forecasts/form.json` and `s2s-reforecasts/form.json`:
+`origin` ∈ {bom, cma, cnr_isac, cptec, cnrm, eccc, **ecmwf**, hmcr, iap_cas, **jma**, kma, ncep,
+ukmo}; `year`/`month`/`day`/`time` (00:00, 12:00); `level_type` ∈ {pressure, single_level,
+isentropic, oceanic}; `variable`; `level_value`; `forecast_type` ∈ {control_forecast,
+perturbed_forecast}; `leadtime_hour` (instants "456" and 24-h windows "432_456"); `area`
+[N, W, S, E]; `data_format` = grib. Reforecasts add `hyear`, `hmonth`, `hday`. Retrieve endpoint
+`/api/retrieve/v1/processes/s2s-forecasts`; client `ecmwf-datastores-client` (submit → request
+id → poll → download), which is what `src/pbch/fetch/s2s.py` wraps.
+
+Real-time coverage on ECDS (init dates per year): ECMWF 104–105/yr 2015–2022 (Mon/Thu), 238 in
+2023 (daily from late June), daily since 2024. JMA 104/yr 2015–16 (Tue+Wed), 52–63/yr 2017–2022
+(weekly), 323 in 2023, daily since 2024, with 00 and 12 UTC runs.
+
+Reforecasts on ECDS: ECMWF on-the-fly, 20 hindcast years ending the year before the issue
+year; 104/yr to 2023, 116 in 2024 and **186 in 2025, 155 so far in 2026 (odd days of the
+month)**. JMA fixed sets keyed by system date: 2014-03-04 (hyears 1981–2010), 2017-01-31
+(1981–2012), 2020-03-31 (1981–2010), 2021-03-31 (1981–2020), 2022-03-31 and 2022-09-30
+(1991–2020). **No CPS4 (2026) reforecast set was listed.**
 
 ## (verify) items
 
 | Item | Status | Finding |
 |---|---|---|
-| Index boxes vs literature | open | Phase 2 |
-| Niseko AMeDAS station | open | Phase 2 |
-| S2S fields per origin (`ecmf`, `rjtd`): t850, z500, snowfall | open | Phase 2 |
-| ECMWF reforecast cadence since CY49R1 (odd days?) | open | Phase 2 |
-| JMA CPS4 25-member Tue/Wed runs in S2S? | open | Phase 2 |
-| Hokkaido/Japan avalanche bulletin publishers | open | Phase 4 |
-| ARCO-ERA5 anonymous read | **resolved** | 200 on `.zmetadata` from the container, no key |
-| BoM MJO reachability | **resolved** | 403 for curl UA, 200 with browser UA |
+| Index boxes vs literature | **resolved** | SHI = Panagiotopoulos et al. 2005 box (not Gong); ALI = Trenberth & Hurrell NPI region; MOI = Hanawa et al. 1988 (JMA operational); EAT = Sun & Li 1997; SJI 13 °C rule = West et al. 2019; SJC has no precedent. Details and DOIs in docs/METHOD.md |
+| Niseko AMeDAS station | **resolved** | ニセコ 16272 is precipitation-only (since 2010): no snowfall, no snow depth. Use Kutchan 16917 (closest) and Rankoshi 16915 |
+| S2S fields per origin: t850, z500, snowfall | **resolved** | ECMWF: temperature 850 hPa, geopotential_height 500 hPa, snow_fall_water_equivalent, u 10 hPa all present. JMA: temperature and geopotential_height on the same 10 pressure levels, **no snowfall** (cold-day precipitation used for its snow baseline). Both carry mean_sea_level_pressure, 2 m temperature, total precipitation, SST |
+| ECMWF reforecast cadence since CY49R1 | **resolved** | 186 reforecast init dates in 2025 = odd days of each month (also confirmed in the constraints: 01, 03, 05, …) |
+| JMA CPS4 25-member Tue/Wed runs in S2S? | **partly resolved** | ECDS lists daily JMA real-time runs at 00 and 12 UTC in 2024–2026; the member count per run is not visible in the form (check the first GRIB). No CPS4 reforecast set is listed |
+| Hokkaido/Japan avalanche bulletin publishers | **resolved** | 日本雪崩ネットワーク JAN (https://nadare.jp, bulletins https://data.nadare.jp/avalanche_informations: Niseko/Yotei/Yoichi and Daisetsu/Tokachi regions); ニセコ雪崩情報 Niseko Avalanche Information (http://niseko.nadare.info/, basis of the Niseko Rules); JMA なだれ注意報 advisories; aggregator https://hokkaidowilds.org/avalanche-bulletins-for-central-hokkaido |
+| ARCO-ERA5 anonymous read | **resolved** | works, but see the chunking verdict above |
+| BoM MJO reachability | **resolved** | current file: https://www.bom.gov.au/clim_data/IDCKGEM000/rmm.74toRealtime.txt (browser UA); the old /climate/mjo/graphics/ file stopped on 2024-02-24 |
+| Measurement lag for ERA5T | assumed | 5 days; confirm from CDS once keyed |

@@ -7,16 +7,18 @@ indices:
     field: msl
     box: {lat: [40.0, 65.0], lon: [80.0, 120.0]}
     sign: 1
-    units: hPa
+    units: hPa           # reported as (pressure - 1000 hPa)
     scale: 0.01          # Pa -> hPa
+    offset: 100000.0
     plain: "Siberian High"
   ALI:
     name: Aleutian Low intensity
     field: msl
     box: {lat: [30.0, 65.0], lon: [160.0, 220.0]}
-    sign: -1             # report -(pressure): high = deep low
+    sign: -1             # report -(pressure - 1000 hPa): high = deep low
     units: hPa
     scale: 0.01
+    offset: 100000.0
     plain: "Aleutian Low"
   MOI:
     name: Winter monsoon index (Irkutsk minus Nemuro)
@@ -43,8 +45,9 @@ indices:
     field: t850
     box: {lat: [38.0, 46.0], lon: [132.0, 141.0]}
     sign: -1             # high = colder
-    units: K
+    units: degC          # reported as -(T850 in C)
     scale: 1.0
+    offset: 273.15
     plain: "Sea-of-Japan cold air"
   SJI:
     name: Sea-of-Japan instability (SST minus T850)
@@ -60,6 +63,7 @@ indices:
     field: z500
     box: {lat: [30.0, 45.0], lon: [125.0, 145.0]}
     sign: -1             # high = deeper trough
-    units: m
+    units: m             # reported as -(Z500 - 5500 m)
     scale: 1.0
+    offset: 5500.0
     plain: "East Asian trough"
