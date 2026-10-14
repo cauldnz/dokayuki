@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-mode="{{ site.modes.default }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ page_title }} · {{ site.site_title }}</title>
+<meta name="description" content="{{ meta_description }}">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="{{ rel }}assets/brand/hokkaidowilds-mark-270.png">
+<link rel="stylesheet" href="{{ rel }}assets/fonts/lato.css">
+<link rel="stylesheet" href="{{ rel }}design-tokens.css">
+<link rel="stylesheet" href="{{ rel }}static/style.css">
+<script>
+(function(){try{var m=localStorage.getItem("{{ site.modes.storage_key }}");if(m)document.documentElement.setAttribute("data-mode",m);var t=localStorage.getItem("hpo-theme");if(t)document.documentElement.setAttribute("data-theme",t);}catch(e){}})();
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-row">
+    <div class="brand"><a class="brand-logo" href="{{ site.hw_home_url }}" aria-label="HokkaidoWilds.org home"><img src="{{ rel }}{{ site.brand.logo }}" alt="HokkaidoWilds diamond logo" width="31" height="80"></a><span class="brand-text"><a class="brand-title" href="{{ rel }}index.html">{{ site.site_title }}</a><span class="brand-sub">{{ site.tagline }} · part of <a href="{{ site.hw_home_url }}">HokkaidoWilds.org</a></span></span></div>
+    <nav class="controls" aria-label="View options">
+      <div class="mode-toggle" role="group" aria-label="Choose how much detail to show">
+        <button type="button" class="mode-btn" data-set-mode="normie" aria-pressed="false">Normie</button>
+        <button type="button" class="mode-btn" data-set-mode="nerd" aria-pressed="false">Nerd</button>
+      </div>
+      <button type="button" class="icon-btn" id="theme-btn" aria-label="Toggle dark mode" title="Toggle dark mode"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16V2z" fill="currentColor"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+      {% if site.language.ja_toggle %}<button type="button" class="icon-btn" id="ja-btn" aria-pressed="false" aria-label="日本語の見出しを表示" title="日本語 / English">JA</button>{% endif %}
+      <a class="nav-link" href="{{ rel }}method.html">Method</a>
+      <a class="nav-link hw" href="{{ site.hw_home_url }}">HokkaidoWilds</a>
+    </nav>
+  </div>
+</header>
+<main id="main" class="wrap">
+{% block content %}{% endblock %}
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="safety"><strong>{{ site.safety.line }}</strong> Check the official sources and the conditions on the day:
+      {% for l in site.safety.links %}<a href="{{ l.url }}">{{ l.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    <p class="credits">Part of <a href="{{ site.hw_home_url }}">HokkaidoWilds.org</a>. By <a href="{{ site.author_url }}">{{ site.author_name }}</a>.{% if site.hw_post_url %} Read the <a href="{{ site.hw_post_url }}">background post</a>.{% endif %}
+      Code MIT; outlooks CC BY-NC 4.0 (non-commercial). <a href="{{ rel }}latest.json">latest.json</a> · <a href="{{ rel }}archive/">archive</a> · <a href="{{ rel }}embed.html">embed</a></p>
+    <ul class="attrib">{% for a in site.attribution %}<li>{{ a }}</li>{% endfor %}</ul>
+  </div>
+</footer>
+<script src="{{ rel }}static/app.js"></script>
+</body>
+</html>

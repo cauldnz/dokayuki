@@ -1,0 +1,106 @@
+{% extends "base.html.j2" %}
+{% block content %}
+<section class="hero{% if d.stale %} hero-stale{% endif %}" {% if site.brand.hero_image %}style="background-image:url('{{ rel }}{{ site.brand.hero_image }}')"{% endif %}>
+  <div class="hero-inner">
+    <p class="kicker"><span class="en">Weeks 3 &amp; 4 outlook · Sea of Japan side of Hokkaido</span><span class="ja">3〜4週目の見通し・道央日本海側</span></p>
+    <h1 class="headline">{{ d.headline }}</h1>
+    <p class="hero-meta">
+      <span>Issued {{ d.issued }}</span>
+      <span class="nerd-only">· inits ECMWF {{ d.init_dates.ecmwf }}, JMA {{ d.init_dates.jma }}</span>
+      <span>· valid {{ d.weeks[0].valid[0] }} → {{ d.weeks[1].valid[1] }}</span>
+      {% if d.stale %}<span class="stale-badge">Stale since {{ d.stale_since }}</span>{% endif %}
+    </p>
+    {% if site.brand.hero_credit %}<p class="hero-credit">{{ site.brand.hero_credit }}</p>{% endif %}
+  </div>
+</section>
+
+{% if d.stale %}<div class="banner banner-stale" role="status">Upstream data has not arrived since {{ d.stale_since }}. This is the last good outlook; treat it as ageing.</div>{% endif %}
+{% if not d.snow_model.skilful %}<div class="banner banner-warn" role="status">The snow mapping is <strong>not yet skilful</strong> in the backtest (RPSS {{ '%.2f'|format(d.snow_model.skill.rpss) }}, {{ d.snow_model.skill.period }}), so the snow-week calls below are shown greyed out. The circulation indices are the product.</div>{% endif %}
+
+<section class="weeks" aria-labelledby="weeks-h">
+  <h2 id="weeks-h"><span class="en">Snow-week outlook</span><span class="ja">降雪週間の見通し</span></h2>
+  <div class="cards cards-2">
+  {% for w in d.weeks %}
+    <article class="card week-card grade-{{ w.grade|lower|replace(' ', '-') }}{% if not d.snow_model.skilful %} card-muted{% endif %}">
+      <div class="card-top">
+        <span class="card-label">{{ w.label }} · {{ w.valid[0][5:] }} – {{ w.valid[1][5:] }}</span>
+        <span class="chip chip-big{% if w.big_week >= 0.3 %} chip-hot{% endif %}" title="Probability of a top-quintile snow week">Big week {{ pct(w.big_week) }}%</span>
+      </div>
+      <div class="card-body">
+        <p class="grade"><span class="grade-dot"></span><strong>{{ w.grade }}</strong>{% if w.grade != "No signal" %} signal{% endif %}</p>
+        <p id="t-{{ w.lead }}" class="sr-only">{{ w.label }}: below normal {{ pct(w.terciles.below) }} percent, near normal {{ pct(w.terciles.near) }} percent, above normal {{ pct(w.terciles.above) }} percent.</p>
+        {{ tercile_bar(w.terciles, label_id="t-" ~ w.lead) }}
+        <div class="tercile-legend"><span>below</span><span>near normal</span><span>above</span></div>
+        <p class="plain">{{ w.line }}</p>
+        <div class="nerd-only rubric">
+          <p class="rubric-head">Outlook breakdown <span class="muted">(what pushes the odds, logistic-model term contributions)</span></p>
+          {{ factor_bars(w.factors) }}
+          <table class="data-table"><caption class="sr-only">Factor contributions for {{ w.label }}</caption><thead><tr><th>Factor</th><th>Contribution</th></tr></thead><tbody>
+            {% for f in w.factors %}<tr><td>{{ f.name }}</td><td>{{ '%+.2f'|format(f.contribution) }}</td></tr>{% endfor %}</tbody></table>
+          {% if w.skill.rpss is not none %}
+          <details class="skill"><summary class="badge">Backtest skill: RPSS {{ '%.2f'|format(w.skill.rpss) }} ({{ w.skill.period }})</summary>
+            <p>Ranked probability skill score of the tercile forecast against climatology, 95% block-bootstrap interval {{ '%.2f'|format(w.skill.ci[0]) }} to {{ '%.2f'|format(w.skill.ci[1]) }}. Big-week Brier skill {{ '%.2f'|format(w.skill.bss_big) }}, ROC area {{ '%.2f'|format(w.skill.roc_big) }}. Small positive numbers are the honest expectation at weeks 3–4.</p></details>
+          {% else %}<p class="badge badge-off">No proven skill yet</p>{% endif %}
+        </div>
+      </div>
+    </article>
+  {% endfor %}
+  </div>
+</section>
+
+<section class="drivers" aria-labelledby="drivers-h">
+  <h2 id="drivers-h"><span class="en">What's driving things now</span><span class="ja">現在の背景場</span></h2>
+  <div class="strip">
+    <div class="strip-item"><span class="strip-k">Arctic Oscillation</span><span class="strip-v">{{ '%+.1f'|format(d.drivers.ao.value) }}</span><span class="strip-s">{% if d.drivers.ao.value <= -1 %}strongly negative: cold air spills south{% elif d.drivers.ao.value >= 1 %}positive: cold air stays polar{% else %}near neutral{% endif %}<span class="nerd-only"> · {{ d.drivers.ao.date }}</span></span></div>
+    <div class="strip-item"><span class="strip-k">MJO</span>{{ mjo_wheel(d.drivers.mjo.phase, d.drivers.mjo.amp, d.drivers.mjo.rmm1, d.drivers.mjo.rmm2, 96) }}<span class="strip-s">phase {{ d.drivers.mjo.phase }}, amplitude {{ '%.1f'|format(d.drivers.mjo.amp) }}{% if d.drivers.mjo.amp < 1 %} (weak){% endif %}</span></div>
+    <div class="strip-item"><span class="strip-k">Polar vortex</span><span class="strip-v">{{ d.drivers.vortex.state }}</span><span class="strip-s">10 hPa wind at 60°N {{ '%.0f'|format(d.drivers.vortex.u10) }} m/s<span class="nerd-only"> · {{ d.drivers.vortex.date }}</span></span></div>
+    <div class="strip-item"><span class="strip-k">Sea of Japan SST</span><span class="strip-v">{{ '%+.1f'|format(d.drivers.sst_anom) }} °C</span><span class="strip-s">{% if d.drivers.sst_anom > 0.3 %}warmer sea: more fuel for sea-effect snow{% elif d.drivers.sst_anom < -0.3 %}cooler sea: a touch less fuel{% else %}near normal{% endif %}</span></div>
+    <div class="strip-item"><span class="strip-k">Recent snow vs normal</span>
+      {% for name, r in d.drivers.recent_snow.items() %}<span class="strip-s"><span class="ja-inline">{{ r.ja }}</span> {{ name }}: {{ r.obs_cm }} cm vs {{ r.normal_cm }} cm normal{% if r.obs_cm > r.normal_cm * 1.2 %} ↑{% elif r.obs_cm < r.normal_cm * 0.8 %} ↓{% endif %}</span>{% endfor %}</div>
+  </div>
+</section>
+
+<section class="indices nerd-only" aria-labelledby="idx-h">
+  <h2 id="idx-h"><span class="en">Circulation index outlooks</span><span class="ja">循環指数の見通し</span></h2>
+  <p class="lede">Each index is forecast as five equally likely bins (quintiles) after calibration; the dashed line is climatology. The badge is the backtest skill at that lead; cards without skill are greyed out.</p>
+  <div class="cards cards-3">
+  {% for ix in d.indices %}
+    <article class="card idx-card{% if not (ix.skilful['19'] or ix.skilful['26']) %} card-muted{% endif %}">
+      <div class="card-top card-top-idx"><span class="card-label">{{ ix.name }}</span>{{ index_glyph(ix.key) }}</div>
+      <div class="card-body">
+        {% for lead in ['19', '26'] %}
+        <div class="idx-lead{% if not ix.skilful[lead] %} idx-off{% endif %}">
+          <div class="idx-row"><span class="muted">Week {{ 3 if lead == '19' else 4 }}</span>
+            {% if ix.skilful[lead] %}<span class="badge">RPSS {{ '%.2f'|format(ix.skill[lead].rpss) }}</span>{% else %}<span class="badge badge-off">not skilful yet</span>{% endif %}</div>
+          {{ quintile_bar(ix.quintiles[lead]) }}
+          <p class="plain small">{{ ix.line[lead] }}</p>
+          <table class="data-table sr-only"><caption>{{ ix.name }} week {{ 3 if lead == '19' else 4 }} quintile probabilities</caption><tbody><tr>{% for p in ix.quintiles[lead] %}<td>{{ pct(p) }}%</td>{% endfor %}</tr></tbody></table>
+        </div>
+        {% endfor %}
+        <details class="explainer"><summary>What is this?</summary><p>{{ index_help(ix.key) }}</p></details>
+      </div>
+    </article>
+  {% endfor %}
+  </div>
+</section>
+
+<section class="maps nerd-only" aria-labelledby="maps-h">
+  <h2 id="maps-h"><span class="en">Maps</span><span class="ja">地図</span></h2>
+  <details class="maps-details"><summary>Show the week-3 maps (most-likely quintile, shaded by confidence)</summary>
+    <div class="cards cards-3">
+    {% for m in d.maps %}
+      <figure class="card map-card"><figcaption class="card-label">{{ m.title }} · week 3</figcaption><img src="{{ rel }}{{ m.file }}" alt="{{ m.title }} week-3 map: most likely quintile per 1.5-degree cell, shaded by confidence" loading="lazy" width="640" height="400"></figure>
+    {% endfor %}
+    </div>
+    <p class="muted small">Dashed boxes are the index regions; the solid box is Hokkaido. 1.5° grid over 21–72°N, 75°E–135°W.</p>
+  </details>
+</section>
+
+<section class="season nerd-only" aria-labelledby="season-h">
+  <h2 id="season-h"><span class="en">Season tracker</span><span class="ja">シーズンの推移</span></h2>
+  <p id="season-desc" class="lede">Observed weekly snow (ERA5 snowfall over western Hokkaido, mm water equivalent) against the climatology band, with the tercile called 3 (▲) and 4 (△) weeks earlier for honest verification.</p>
+  {{ season_chart(d.season) }}
+  <details><summary>Data table</summary><table class="data-table"><thead><tr><th>Week start</th><th>Observed</th><th>Clim 20–80%</th><th>Called at wk3</th><th>Called at wk4</th></tr></thead><tbody>
+    {% for w in d.season %}<tr><td>{{ w.start }}</td><td>{{ w.obs }}</td><td>{{ w.clim_lo }}–{{ w.clim_hi }}</td><td>{{ w.fc19 }}</td><td>{{ w.fc26 }}</td></tr>{% endfor %}</tbody></table></details>
+</section>
+{% endblock %}
