@@ -21,9 +21,11 @@ jobs:
         with: { enable-cache: true }
       - run: uv venv .venv --python 3.13 && uv pip install --python .venv/bin/python -e .
       - name: Build
+        env:
+          SOURCE: ${{ inputs.source }}
         run: |
-          case "${{ inputs.source }}" in
-            fixture-*) .venv/bin/python scripts/build_site.py --fixture "${{ inputs.source#fixture-}}" --out site/build/publish --preview ;;
+          case "$SOURCE" in
+            fixture-*) .venv/bin/python scripts/build_site.py --fixture "${SOURCE#fixture-}" --out site/build/publish --preview ;;
             latest)    .venv/bin/python scripts/build_site.py --forecast state/latest.json --out site/build/publish ;;
           esac
       - uses: actions/upload-pages-artifact@v3
@@ -31,7 +33,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment: { name: github-pages, url: ${{ steps.deployment.outputs.page_url }} }
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4

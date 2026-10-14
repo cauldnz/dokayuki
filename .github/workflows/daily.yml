@@ -23,13 +23,15 @@ jobs:
       - run: uv venv .venv --python 3.13 && uv pip install --python .venv/bin/python -e ".[fetch]"
       - name: Download state (latest release)
         run: .venv/bin/python scripts/state_release.py download
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Daily run (append new data, refit, forecast, validate, build; stale fallback on failure)
         run: .venv/bin/python scripts/daily.py --budget-min 30
       - name: Upload state (new release, keep last 5)
         if: success()
         run: .venv/bin/python scripts/state_release.py upload --keep 5
-        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with: { name: site, path: site/build/latest }
       - uses: actions/upload-pages-artifact@v3
@@ -39,7 +41,9 @@ jobs:
     needs: run
     if: vars.DOKAYUKI_PUBLISH == 'true'
     runs-on: ubuntu-latest
-    environment: { name: github-pages, url: ${{ steps.deployment.outputs.page_url }} }
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
