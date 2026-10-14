@@ -7,16 +7,16 @@
 <h2>The method in plain English</h2>
 <ol>
 <li><strong>Two models, many members.</strong> We take the ECMWF and JMA subseasonal ensembles and compute, for every member, a handful of circulation indices for weeks 3 and 4.</li>
-<li><strong>Calibration (PBC).</strong> Models have habits. Probabilistic Bias Correction (Guan, Mouatadid et al., <em>Nature</em>, 2026) learns from 20 years of reforecasts how often "the model said 70 %" really happened, for this time of year, and corrects the odds. It blends a direct correction (Debias++) with a small regression on recent observations (Persistence++).</li>
+<li><strong>Calibration (PBC).</strong> Models have habits. Probabilistic Bias Correction (Guan, Mouatadid et al., 2026, arXiv:2604.16238) learns from 20 years of reforecasts how often "the model said 70 %" really happened, for this time of year, and corrects the odds. It blends a direct correction (Debias++) with a small regression on recent observations (Persistence++).</li>
 <li><strong>Snow mapping.</strong> A small statistical model turns the calibrated index odds, plus what we can already see (Arctic Oscillation, MJO, polar vortex, sea temperature, recent snow), into the odds of a below/near/above-normal snow week and of a big snow week.</li>
 <li><strong>Honesty rule.</strong> The snow call is only shown if it beats climatology and the raw model snowfall in a ten-winter backtest. Otherwise the page says so and shows the indices only.</li>
 </ol>
 <h2>Backtest</h2>
 <p class="muted">{{ d.backtest.note }}</p>
 <table class="data-table"><thead><tr><th>Snow model vs baselines</th><th>RPSS week 3</th><th>RPSS week 4</th></tr></thead><tbody>
-{% for r in d.backtest.snow %}<tr><td>{{ r.model }}</td><td>{{ '%.2f'|format(r.rpss19) }}</td><td>{{ '%.2f'|format(r.rpss26) }}</td></tr>{% endfor %}</tbody></table>
+{% for r in d.backtest.snow %}<tr><td>{{ r.model }}</td><td>{{ r.rpss19|num }}</td><td>{{ r.rpss26|num }}</td></tr>{% endfor %}</tbody></table>
 <table class="data-table"><thead><tr><th>Index</th><th>RPSS week 3</th><th>RPSS week 4</th></tr></thead><tbody>
-{% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ '%.2f'|format(ix.skill['19'].rpss) }}</td><td>{{ '%.2f'|format(ix.skill['26'].rpss) }}</td></tr>{% endfor %}</tbody></table>
+{% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ ix.skill['19'].rpss|num }}</td><td>{{ ix.skill['26'].rpss|num }}</td></tr>{% endfor %}</tbody></table>
 <p>Full tables, reliability diagrams and the windows-of-opportunity analysis: <code>docs/BACKTEST.md</code> in the repository.</p>
 <h2>Limitations</h2>
 <ul>

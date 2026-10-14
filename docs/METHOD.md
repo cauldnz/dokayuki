@@ -4,7 +4,7 @@
 
 The physical ingredients of Hokkaido snow are well known and the dynamical models already
 simulate them. **We claim no new physics.** The project tests one thing: whether the
-probabilistic bias correction of Guan, Mouatadid et al. (*Nature*, 2026) finds learnable,
+probabilistic bias correction of Guan, Mouatadid et al. (2026, arXiv:2604.16238) finds learnable,
 correctable model error at weeks 3–4 and turns it into useful skill for Hokkaido snow.
 
 - **The headline metric is the lift**: ΔRPSS (ΔBSS for the big week) of the PBC product minus
@@ -45,7 +45,8 @@ smaller still (`pbch.score.effective_n`). Rules, applied now and to all later tu
 Weekly fields from the ECMWF and JMA subseasonal ensembles (via the S2S database on ECDS) are
 reduced, member by member, to a handful of circulation indices and to a western-Hokkaido
 snow-week measure. Each index (and each 1.5° grid cell) is calibrated with Probabilistic Bias
-Correction (Guan, Mouatadid et al., *Nature*, 2026, doi:10.1038/s41586-026-11126-x; reference
+Correction (Guan, Mouatadid et al., 2026, arXiv:2604.16238, doi:10.48550/arXiv.2604.16238; the Nature DOI
+given in the brief, 10.1038/s41586-026-11126-x, did not resolve on 2026-10-14; reference
 code https://github.com/mouatadid/pbc): the ensemble is turned into a quintile CDF against
 ERA5 thresholds, Debias++ removes the day-of-year-dependent bias learned from 20 years of
 reforecasts, Persistence++ regresses the quintile indicators on two observed lags, the model

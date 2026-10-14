@@ -30,7 +30,9 @@ def _quint(lean: float, sharp: float = 1.0) -> list[float]:
     base = np.array([0.2] * 5)
     tilt = np.array([-2, -1, 0, 1, 2]) * lean * 0.08 * sharp
     q = np.clip(base + tilt, 0.02, None)
-    return [round(float(x), 3) for x in q / q.sum()]
+    q = [round(float(x), 3) for x in q / q.sum()]
+    q[2] = round(1 - sum(q[:2]) - sum(q[3:]), 3)
+    return q
 
 
 def _grid(rng, lean, lats, lons):
@@ -50,9 +52,8 @@ def make_state(kind: str, issued: str = "2026-01-14") -> dict:
     weeks = []
     for lead, lean in ((19, lean3), (26, lean4)):
         start = init + dt.timedelta(days=lead - 1)
-        above = 1 / 3 + 0.16 * lean; below = 1 / 3 - 0.12 * lean
-        near = 1 - above - below
-        t = {"below": round(below, 3), "near": round(near, 3), "above": round(above, 3)}
+        above = round(1 / 3 + 0.16 * lean, 3); below = round(1 / 3 - 0.12 * lean, 3)
+        t = {"below": below, "near": round(1 - above - below, 3), "above": above}
         big = round(max(0.03, 0.2 + 0.12 * lean), 3)
         rp = {19: 0.06, 26: 0.03}[lead] if skilful else None
         grade = signal_grade(t, skilful, rp)
@@ -124,5 +125,7 @@ def make_state(kind: str, issued: str = "2026-01-14") -> dict:
                      "note": "FIXTURE numbers for design QA only; the real backtest replaces every number here."},
         "repro": {"commit": "fixture", "state_version": "none", "command": "scripts/bootstrap.sh --with-cds --with-s2s && make backtest && make site"},
     }
+    from .references import render as render_refs
+    state["references"] = render_refs()
     state["headline"] = headline(state)
     return state

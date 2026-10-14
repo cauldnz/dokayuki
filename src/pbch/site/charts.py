@@ -41,7 +41,7 @@ def quintile_bar(q: list[float], width: int = 200, height: int = 44, highlight_t
         parts.append(f'<text x="{i * (bw + gap) + bw / 2:.1f}" y="{height - 1}" text-anchor="middle" font-size="9" fill="var(--muted)">{pct(p)}</text>')
     yc = height - 12 - (height - 12) * 0.2 / maxp
     parts.append(f'<line x1="0" y1="{yc:.1f}" x2="{width}" y2="{yc:.1f}" stroke="var(--muted)" stroke-dasharray="3 3" stroke-width="1"/>')
-    return f'<svg class="quint" viewBox="0 0 {width} {height}" width="100%" height="{height}" role="img" aria-hidden="true">' + "".join(parts) + "</svg>"
+    return f'<svg class="quint" viewBox="0 0 {width} {height}" width="100%" height="{height}" aria-hidden="true" focusable="false">' + "".join(parts) + "</svg>"
 
 
 def factor_bars(factors: list[dict], width: int = 300, row: int = 22) -> str:
@@ -61,7 +61,7 @@ def factor_bars(factors: list[dict], width: int = 300, row: int = 22) -> str:
         col = "var(--snow-above)" if c >= 0 else "var(--snow-below)"
         parts.append(f'<text x="0" y="{y + 11}" font-size="11" fill="var(--ink)">{f["name"]}</text>')
         parts.append(f'<rect x="{x:.1f}" y="{y}" width="{max(w, 1):.1f}" height="{row - 8}" fill="{col}" rx="2"/>')
-    return f'<svg class="factors" viewBox="0 0 {width} {h}" width="100%" height="{h}" role="img" aria-hidden="true">' + "".join(parts) + "</svg>"
+    return f'<svg class="factors" viewBox="0 0 {width} {h}" width="100%" height="{h}" aria-hidden="true" focusable="false">' + "".join(parts) + "</svg>"
 
 
 def mjo_wheel(phase: int, amp: float, rmm1: float | None = None, rmm2: float | None = None, size: int = 120) -> str:

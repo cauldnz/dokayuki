@@ -80,8 +80,19 @@ def _write_map(m: dict, out: Path, coast, boxes, region, hok) -> str:
     return name
 
 
+def num(x, sign: str = "", nd: int = 2) -> str:
+    """Null-safe number formatting: None -> an en dash (never a crash, never a fake zero)."""
+    if x is None:
+        return "–"
+    try:
+        return f"{float(x):{sign}.{nd}f}"
+    except (TypeError, ValueError):
+        return "–"
+
+
 def make_env() -> Environment:
     env = Environment(loader=FileSystemLoader(str(SITE_DIR / "templates")), autoescape=select_autoescape(["html", "j2"]))
+    env.filters["num"] = num
     coast = charts.load_coast(SITE_DIR / "assets" / "geo" / "ne_110m_coastline.geojson")
     region = load_yaml("region")
     idx = load_indices()

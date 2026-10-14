@@ -15,7 +15,7 @@
 </section>
 
 {% if d.stale %}<div class="banner banner-stale" role="status">Upstream data has not arrived since {{ d.stale_since }}. This is the last good outlook; treat it as ageing.</div>{% endif %}
-{% if not d.snow_model.skilful %}<div class="banner banner-warn" role="status">The snow mapping is <strong>not yet skilful</strong> in the backtest (RPSS {{ '%.2f'|format(d.snow_model.skill.rpss) }}, {{ d.snow_model.skill.period }}), so the snow-week calls below are shown greyed out. The circulation indices are the product.</div>{% endif %}
+{% if not d.snow_model.skilful %}<div class="banner banner-warn" role="status">The snow mapping is <strong>not yet skilful</strong> in the backtest (RPSS {{ d.snow_model.skill.rpss|num }}, {{ d.snow_model.skill.period }}), so the snow-week calls below are shown greyed out. The circulation indices are the product.</div>{% endif %}
 
 <section class="weeks" aria-labelledby="weeks-h">
   <h2 id="weeks-h"><span class="en">{{ site.wording.signal_name }}</span><span class="ja">先読みシグナル</span></h2>
@@ -37,10 +37,10 @@
           <p class="rubric-head">Outlook breakdown <span class="muted">(what pushes the odds, logistic-model term contributions)</span></p>
           {{ factor_bars(w.factors) }}
           <table class="data-table"><caption class="sr-only">Factor contributions for {{ w.label }}</caption><thead><tr><th>Factor</th><th>Contribution</th></tr></thead><tbody>
-            {% for f in w.factors %}<tr><td>{{ f.name }}</td><td>{{ '%+.2f'|format(f.contribution) }}</td></tr>{% endfor %}</tbody></table>
+            {% for f in w.factors %}<tr><td>{{ f.name }}</td><td>{{ f.contribution|num('+') }}</td></tr>{% endfor %}</tbody></table>
           {% if w.lift %}
           <details class="skill"><summary class="badge{% if not w.lift.significant %} badge-off{% endif %}">{{ w.lift_badge }}</summary>
-            <p><strong>Lift first.</strong> The operationally debiased model scores RPSS {{ '%.2f'|format(w.lift.skill_debiased) }} and the raw model {{ '%.2f'|format(w.lift.skill_raw) }} against climatology; our calibrated product scores {{ '%.2f'|format(w.lift.skill_pbc) }}. The badge is the difference to the debiased model with its 95% block-bootstrap interval ({{ w.skill.period }}). Big-week Brier skill {{ '%.2f'|format(w.skill.bss_big) }}, ROC area {{ '%.2f'|format(w.skill.roc_big) }}. Small numbers are the honest expectation at weeks 3–4.</p></details>
+            <p><strong>Lift first.</strong> The operationally debiased model scores RPSS {{ w.lift.skill_debiased|num }} and the raw model {{ w.lift.skill_raw|num }} against climatology; our calibrated product scores {{ w.lift.skill_pbc|num }}. The badge is the difference to the debiased model with its 95% block-bootstrap interval ({{ w.skill.period }}). Big-week Brier skill {{ w.skill.bss_big|num }}, ROC area {{ w.skill.roc_big|num }}. Small numbers are the honest expectation at weeks 3–4.</p></details>
           {% else %}<p class="badge badge-off">No proven skill yet</p>{% endif %}
         </div>
       </div>
@@ -75,10 +75,10 @@
 <section class="drivers" aria-labelledby="drivers-h">
   <h2 id="drivers-h"><span class="en">What's driving things now</span><span class="ja">現在の背景場</span></h2>
   <div class="strip">
-    <div class="strip-item"><span class="strip-k">Arctic Oscillation</span><span class="strip-v">{{ '%+.1f'|format(d.drivers.ao.value) }}</span><span class="strip-s">{% if d.drivers.ao.value <= -1 %}strongly negative: cold air spills south{% elif d.drivers.ao.value >= 1 %}positive: cold air stays polar{% else %}near neutral{% endif %}<span class="nerd-only"> · {{ d.drivers.ao.date }}</span></span></div>
-    <div class="strip-item"><span class="strip-k">MJO</span>{{ mjo_wheel(d.drivers.mjo.phase, d.drivers.mjo.amp, d.drivers.mjo.rmm1, d.drivers.mjo.rmm2, 96) }}<span class="strip-s">phase {{ d.drivers.mjo.phase }}, amplitude {{ '%.1f'|format(d.drivers.mjo.amp) }}{% if d.drivers.mjo.amp < 1 %} (weak){% endif %}</span></div>
-    <div class="strip-item"><span class="strip-k">Polar vortex</span><span class="strip-v">{{ d.drivers.vortex.state }}</span><span class="strip-s">10 hPa wind at 60°N {{ '%.0f'|format(d.drivers.vortex.u10) }} m/s<span class="nerd-only"> · {{ d.drivers.vortex.date }}</span></span></div>
-    <div class="strip-item"><span class="strip-k">Sea of Japan SST</span><span class="strip-v">{{ '%+.1f'|format(d.drivers.sst_anom) }} °C</span><span class="strip-s">{% if d.drivers.sst_anom > 0.3 %}warmer sea: more fuel for sea-effect snow{% elif d.drivers.sst_anom < -0.3 %}cooler sea: a touch less fuel{% else %}near normal{% endif %}</span></div>
+    <div class="strip-item"><span class="strip-k">Arctic Oscillation</span><span class="strip-v">{{ d.drivers.ao.value|num('+', 1) }}</span><span class="strip-s">{% if d.drivers.ao.value <= -1 %}strongly negative: cold air spills south{% elif d.drivers.ao.value >= 1 %}positive: cold air stays polar{% else %}near neutral{% endif %}<span class="nerd-only"> · {{ d.drivers.ao.date }}</span></span></div>
+    <div class="strip-item"><span class="strip-k">MJO</span>{{ mjo_wheel(d.drivers.mjo.phase, d.drivers.mjo.amp, d.drivers.mjo.rmm1, d.drivers.mjo.rmm2, 96) }}<span class="strip-s">phase {{ d.drivers.mjo.phase }}, amplitude {{ d.drivers.mjo.amp|num('', 1) }}{% if d.drivers.mjo.amp < 1 %} (weak){% endif %}</span></div>
+    <div class="strip-item"><span class="strip-k">Polar vortex</span><span class="strip-v">{{ d.drivers.vortex.state }}</span><span class="strip-s">10 hPa wind at 60°N {{ d.drivers.vortex.u10|num('', 0) }} m/s<span class="nerd-only"> · {{ d.drivers.vortex.date }}</span></span></div>
+    <div class="strip-item"><span class="strip-k">Sea of Japan SST</span><span class="strip-v">{{ d.drivers.sst_anom|num('+', 1) }} °C</span><span class="strip-s">{% if d.drivers.sst_anom > 0.3 %}warmer sea: more fuel for sea-effect snow{% elif d.drivers.sst_anom < -0.3 %}cooler sea: a touch less fuel{% else %}near normal{% endif %}</span></div>
     <div class="strip-item"><span class="strip-k">Recent snow vs normal</span>
       {% for name, r in d.drivers.recent_snow.items() %}<span class="strip-s"><span class="ja-inline">{{ r.ja }}</span> {{ name }}: {{ r.obs_cm }} cm vs {{ r.normal_cm }} cm normal{% if r.obs_cm > r.normal_cm * 1.2 %} ↑{% elif r.obs_cm < r.normal_cm * 0.8 %} ↓{% endif %}</span>{% endfor %}</div>
   </div>
@@ -95,7 +95,7 @@
         {% for lead in ['19', '26'] %}
         <div class="idx-lead{% if not ix.skilful[lead] %} idx-off{% endif %}">
           <div class="idx-row"><span class="muted">Week {{ 3 if lead == '19' else 4 }}</span>
-            <span class="badge{% if not ix.skilful[lead] %} badge-off{% endif %}" title="{{ ix.lift_badge[lead] }}">{% if ix.skilful[lead] %}lift {{ '%+.2f'|format(ix.skill[lead].lift.lift) }} · RPSS {{ '%.2f'|format(ix.skill[lead].rpss) }}{% else %}no demonstrated improvement{% endif %}</span></div>
+            <span class="badge{% if not ix.skilful[lead] %} badge-off{% endif %}" title="{{ ix.lift_badge[lead] }}">{% if ix.skilful[lead] %}lift {{ ix.skill[lead].lift.lift|num('+') }} · RPSS {{ ix.skill[lead].rpss|num }}{% else %}no demonstrated improvement{% endif %}</span></div>
           {{ quintile_bar(ix.quintiles[lead]) }}
           <p class="plain small">{{ ix.line[lead] }}</p>
           <table class="data-table sr-only"><caption>{{ ix.name }} week {{ 3 if lead == '19' else 4 }} quintile probabilities</caption><tbody><tr>{% for p in ix.quintiles[lead] %}<td>{{ pct(p) }}%</td>{% endfor %}</tr></tbody></table>
@@ -134,16 +134,16 @@
   <p class="lede">{{ d.backtest.note }}</p>
   <h3>Lift over the model (headline metric)</h3>
   <table class="data-table"><thead><tr><th>Target</th><th>Model's own skill (debiased, RPSS)</th><th>PBC lift</th><th>95% CI</th><th>Stage-3 lift</th><th>95% CI</th></tr></thead><tbody>
-  {% for r in d.backtest.lift %}<tr><td>{{ r.what }}</td><td>{{ '%.2f'|format(r.model_skill) }}</td><td>{{ '%+.2f'|format(r.pbc_lift) }}</td><td>{{ '%+.2f'|format(r.pbc_ci[0]) }} to {{ '%+.2f'|format(r.pbc_ci[1]) }}</td><td>{{ '%+.2f'|format(r.stage3_lift) }}</td><td>{{ '%+.2f'|format(r.stage3_ci[0]) }} to {{ '%+.2f'|format(r.stage3_ci[1]) }}</td></tr>{% endfor %}</tbody></table>
+  {% for r in d.backtest.lift %}<tr><td>{{ r.what }}</td><td>{{ r.model_skill|num }}</td><td>{{ r.pbc_lift|num('+') }}</td><td>{{ r.pbc_ci[0]|num('+') }} to {{ r.pbc_ci[1]|num('+') }}</td><td>{{ r.stage3_lift|num('+') }}</td><td>{{ r.stage3_ci[0]|num('+') }} to {{ r.stage3_ci[1]|num('+') }}</td></tr>{% endfor %}</tbody></table>
   <p class="small muted">Three layers, kept apart: what the dynamical model already knew, what PBC adds, what the ingredient model adds. An interval that spans zero is reported as "no demonstrated improvement".</p>
   <h3>Index lift by lead</h3>
   <table class="data-table"><thead><tr><th>Index</th><th>Stage</th><th>Week 3 lift (CI)</th><th>Week 3 RPSS</th><th>Week 4 lift (CI)</th><th>Week 4 RPSS</th></tr></thead><tbody>
-  {% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ ix.stage }}</td><td>{{ '%+.2f'|format(ix.skill['19'].lift.lift) }} ({{ '%+.2f'|format(ix.skill['19'].lift.ci[0]) }}, {{ '%+.2f'|format(ix.skill['19'].lift.ci[1]) }})</td><td>{{ '%.2f'|format(ix.skill['19'].rpss) }}</td><td>{{ '%+.2f'|format(ix.skill['26'].lift.lift) }} ({{ '%+.2f'|format(ix.skill['26'].lift.ci[0]) }}, {{ '%+.2f'|format(ix.skill['26'].lift.ci[1]) }})</td><td>{{ '%.2f'|format(ix.skill['26'].rpss) }}</td></tr>{% endfor %}</tbody></table>
+  {% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ ix.stage }}</td><td>{{ ix.skill['19'].lift.lift|num('+') }} ({{ ix.skill['19'].lift.ci[0]|num('+') }}, {{ ix.skill['19'].lift.ci[1]|num('+') }})</td><td>{{ ix.skill['19'].rpss|num }}</td><td>{{ ix.skill['26'].lift.lift|num('+') }} ({{ ix.skill['26'].lift.ci[0]|num('+') }}, {{ ix.skill['26'].lift.ci[1]|num('+') }})</td><td>{{ ix.skill['26'].rpss|num }}</td></tr>{% endfor %}</tbody></table>
   <h3>Windows of opportunity</h3>
   <table class="data-table"><thead><tr><th>Condition at issue time</th><th>n weeks</th><th>Snow-week RPSS</th><th>95% CI</th></tr></thead><tbody>
-  {% for r in d.backtest.windows %}<tr><td>{{ r.condition }}</td><td>{{ r.n }}</td><td>{{ '%.2f'|format(r.rpss) }}</td><td>{{ '%+.2f'|format(r.ci[0]) }} to {{ '%+.2f'|format(r.ci[1]) }}</td></tr>{% endfor %}</tbody></table>
+  {% for r in d.backtest.windows %}<tr><td>{{ r.condition }}</td><td>{{ r.n }}</td><td>{{ r.rpss|num }}</td><td>{{ r.ci[0]|num('+') }} to {{ r.ci[1]|num('+') }}</td></tr>{% endfor %}</tbody></table>
   <h3>Sample size and experiments</h3>
-  <p>{{ d.backtest.effective_n.weeks }} DJF weeks in the open test winters, effective sample about {{ d.backtest.effective_n.effective }} after autocorrelation. Experiment log: {{ d.backtest.experiments.n_trials }} configurations evaluated{% if d.backtest.experiments.best is not none %}; best {{ '%.2f'|format(d.backtest.experiments.best) }}, deflated for selection {{ '%.2f'|format(d.backtest.experiments.deflated) }}{% endif %}. The last three winters (2023/24–2025/26) are sealed and {% if d.backtest.final_exam %}were evaluated once: {{ d.backtest.final_exam }}{% else %}have not been evaluated yet{% endif %}.</p>
+  <p>{{ d.backtest.effective_n.weeks }} DJF weeks in the open test winters, effective sample about {{ d.backtest.effective_n.effective }} after autocorrelation. Experiment log: {{ d.backtest.experiments.n_trials }} configurations evaluated{% if d.backtest.experiments.best is not none %}; best {{ d.backtest.experiments.best|num }}, deflated for selection {{ d.backtest.experiments.deflated|num }}{% endif %}. The last three winters (2023/24–2025/26) are sealed and {% if d.backtest.final_exam %}were evaluated once: {{ d.backtest.final_exam }}{% else %}have not been evaluated yet{% endif %}.</p>
   <h3>Limitations</h3>
   <ul class="small">
     <li>About ten winters of ~13 DJF weeks each, autocorrelated: intervals are wide and a non-significant lift is reported as no signal.</li>

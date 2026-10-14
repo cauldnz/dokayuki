@@ -35,7 +35,7 @@ attribution:
   - "AMeDAS: 出典：気象庁ホームページ"
   - "Arctic Oscillation index: NOAA Climate Prediction Center"
   - "MJO RMM index: Australian Bureau of Meteorology"
-  - "Method: Probabilistic Bias Correction, Guan, Mouatadid et al., Nature (2026), doi:10.1038/s41586-026-11126-x; code github.com/mouatadid/pbc (MIT)"
+  - "Method: Probabilistic Bias Correction, Guan, Mouatadid et al. (2026), arXiv:2604.16238 (the Nature DOI in the brief did not resolve on 2026-10-14); code github.com/mouatadid/pbc (MIT)"
 licence:
   code: "MIT"
   products: "CC BY-NC 4.0"

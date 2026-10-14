@@ -2,7 +2,7 @@
 
 Week-3 and week-4 probabilistic outlooks of Hokkaido winter snowfall (Sea of Japan side:
 Niseko, Kutchan, Otaru, Sapporo) from circulation indices calibrated with Probabilistic Bias
-Correction (PBC; Guan, Mouatadid et al., *Nature* 2026, doi:10.1038/s41586-026-11126-x),
+Correction (PBC; Guan, Mouatadid et al. 2026, arXiv:2604.16238),
 published daily to GitHub Pages.
 
 **Thesis.** The ingredients of Hokkaido snow are known and the models already simulate them;
@@ -47,3 +47,9 @@ Credentials are read from environment variables only (`ECDS_URL`/`ECDS_KEY`,
 
 This is a personal, non-commercial research project. It is **not** an avalanche or mountain
 weather forecast.
+
+## Validation
+
+`docs/VALIDATION.md` maps every claim to the test that proves it (parity, invariants, leakage,
+statistical checks on data with known answers, runtime validators, end-to-end, site checks).
+`make validate` prints the matrix with live status; CI runs it on every push.
