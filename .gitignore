@@ -13,3 +13,4 @@ site/build/
 *.egg-info/
 .ruff_cache/
 docs/screenshots/*.tmp
+logs/
