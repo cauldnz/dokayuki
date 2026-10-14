@@ -94,6 +94,8 @@ class IndexDef:
     sst_minus: bool = False
     units: str = ""
     offset: float = 0.0     # value = sign * scale * (raw - offset); e.g. 273.15 for K -> C
+    stage: int = 0          # ingredient-chain stage (1 trigger .. 5 delivery), 0 = unassigned
+    extra: dict = field(default_factory=dict)   # special-form flags: zonal_mean_lat, anomaly, ao_projection, nw_flow, sji_days, threshold_c
 
 
 def load_indices(config_dir: Path | None = None) -> dict[str, IndexDef]:
@@ -116,8 +118,19 @@ def load_indices(config_dir: Path | None = None) -> dict[str, IndexDef]:
             sst_minus=bool(d.get("sst_minus", False)),
             units=d.get("units", ""),
             offset=float(d.get("offset", 0.0)),
+            stage=int(d.get("stage", 0)),
+            extra={k: v for k, v in d.items() if k in ("zonal_mean_lat", "anomaly", "ao_projection", "nw_flow", "sji_days", "threshold_c", "verify")},
         )
+    stages = load_yaml("indices", config_dir).get("stages", {})
+    for k, st in stages.items():
+        if k in out and out[k].stage == 0:
+            out[k] = IndexDef(**{**out[k].__dict__, "stage": int(st)})
     return out
+
+
+def load_stage_names(config_dir: Path | None = None) -> dict[int, dict]:
+    raw = load_yaml("indices", config_dir).get("stage_names", {})
+    return {int(k): v for k, v in raw.items()}
 
 
 @dataclass(frozen=True)

@@ -11,6 +11,11 @@ brand:
   mark: "assets/brand/hokkaidowilds-mark-270.png"
   hero_image: ""                                             # drop a HokkaidoWilds photo in site/assets/photos/ and reference it here
   hero_credit: ""
+wording:
+  signal_name: "Book-ahead signal"          # alternative: "Beat-the-crowd signal"
+  signal_blurb: "Weeks 3 and 4 are when you can still act: get leave approved, book flights while they're cheap and grab a room before the crowd notices. We can't promise snow; we can shift the odds early. \"Week 3 looks better than week 4 for a trip\", never \"book Tuesday\"."
+  gag: "Japow. Alta pow. Albany pow.*"
+  gag_footnote: "*Nobody has ever flown to Albany, NY for the powder. Probably."
 modes:
   default: normie                                            # "normie" | "nerd"
   storage_key: "hpo-mode"                                    # localStorage key (no cookies, no tracking)

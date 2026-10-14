@@ -10,6 +10,11 @@ domain:
   # Contains every index box (Siberian High to the Aleutian Low).
   lat: [21.0, 72.0]       # inclusive, on the 1.5 lattice
   lon: [75.0, 225.0]      # 75E .. 135W, on the 1.5 lattice
+# Stage-1 (trigger) targets need a hemispheric field; only derived per-member index values are stored for it.
+domain_hemispheric:
+  lat: [21.0, 90.0]
+  lon: [0.0, 358.5]
+  fields: [msl, z500, u10hpa]
 masks:
   japan_land:    {lat: [30.0, 46.0], lon: [129.0, 146.0], land_only: true}
   hokkaido_land: {lat: [41.0, 46.0], lon: [139.0, 146.0], land_only: true}

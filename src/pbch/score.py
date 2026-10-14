@@ -89,3 +89,61 @@ def block_bootstrap_ci(score_model: pd.Series, score_ref: pd.Series, n_boot: int
         boots.append(1 - sub.m.mean() / sub.r.mean())
     lo, hi = np.nanquantile(boots, [alpha / 2, 1 - alpha / 2])
     return float(est), float(lo), float(hi)
+
+
+# ----------------------------------------------------------------------------- spec update 1: lift and effective N
+def lift(score_model: pd.Series, score_ref: pd.Series, score_clim: pd.Series, n_boot: int = 2000,
+         alpha: float = 0.05, seed: int = 0, block: str = "season") -> dict:
+    """Lift = skill(model) - skill(ref), both relative to climatology, with a block-bootstrap CI.
+
+    Skill = 1 - mean(score)/mean(score_clim). Resamples whole winters jointly for model, ref and
+    climatology so the paired difference is honest. Returns point estimate, CI, p (two-sided,
+    bootstrap), and the two absolute skills.
+    """
+    df = pd.DataFrame({"m": score_model, "r": score_ref, "c": score_clim}).dropna()
+    df["blk"] = [season_of(t) for t in df.index] if block == "season" else df.index.year
+    groups = {k: g for k, g in df.groupby("blk")}
+    keys = list(groups)
+    def skills(d):
+        sm, sr = 1 - d.m.mean() / d.c.mean(), 1 - d.r.mean() / d.c.mean()
+        return sm, sr, sm - sr
+    sm, sr, est = skills(df)
+    rng = np.random.default_rng(seed)
+    boots = []
+    for _ in range(n_boot):
+        pick = rng.choice(keys, size=len(keys), replace=True)
+        boots.append(skills(pd.concat([groups[k] for k in pick]))[2])
+    boots = np.asarray(boots)
+    lo, hi = np.nanquantile(boots, [alpha / 2, 1 - alpha / 2])
+    p = 2 * min((boots <= 0).mean(), (boots >= 0).mean())
+    return {"skill_model": float(sm), "skill_ref": float(sr), "lift": float(est), "ci": (float(lo), float(hi)),
+            "p_boot": float(p), "n_weeks": int(len(df)), "n_blocks": int(len(keys)),
+            "significant": bool(lo > 0 or hi < 0)}
+
+
+def effective_n(x: pd.Series, max_lag: int = 10) -> float:
+    """Effective sample size n / (1 + 2 sum_k rho_k) using autocorrelations up to max_lag (Bretherton 1999 form)."""
+    v = pd.Series(x).dropna().values
+    n = len(v)
+    if n < 3:
+        return float(n)
+    v = v - v.mean()
+    denom = (v ** 2).sum()
+    rhos = []
+    for k in range(1, min(max_lag, n - 1) + 1):
+        r = (v[:-k] * v[k:]).sum() / denom
+        if r <= 0:
+            break
+        rhos.append(r)
+    return float(n / (1 + 2 * sum(rhos)))
+
+
+def deflated_skill(best: float, trials: int, null_sd: float) -> float:
+    """Simple deflation of the best-of-N skill: subtract the expected maximum of N iid normal nulls
+    with standard deviation ``null_sd`` (a conservative stand-in for a reality-check adjustment)."""
+    if trials <= 1:
+        return best
+    from scipy.stats import norm
+    # expected max of N standard normals (Blom approximation)
+    emax = norm.ppf((trials - 0.375) / (trials + 0.25))
+    return float(best - emax * null_sd)

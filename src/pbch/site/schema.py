@@ -79,3 +79,26 @@ def headline(d: dict) -> str:
     if g4 in ("Strong", "Moderate") and w4["terciles"]["above"] > w4["terciles"]["below"]:
         return "Nothing clear for week 3, but week 4 is leaning snowier than normal."
     return "No strong signal either way: expect roughly normal odds of snow for the season."
+
+
+STAGES = {1: "Trigger", 2: "Outbreak", 3: "Steering", 4: "Fuel", 5: "Delivery"}
+
+
+def stage_state(score: float) -> str:
+    """Three-way state of an ingredient-chain stage from a signed score (sum of standardised
+    contributions of its indices): lining up / neutral / against."""
+    if score >= 0.25:
+        return "lining up"
+    if score <= -0.25:
+        return "against"
+    return "neutral"
+
+
+def lift_badge(lift: dict | None) -> str:
+    """Spec update 1: badges lead with the lift over the operationally debiased model."""
+    if not lift or lift.get("lift") is None:
+        return "No proven skill yet"
+    if not lift.get("significant"):
+        return "No demonstrated improvement over the raw model"
+    sign = "+" if lift["lift"] >= 0 else ""
+    return f"Lift over debiased model: {sign}{lift['lift']:.2f} RPSS ({lift['ci'][0]:+.2f} to {lift['ci'][1]:+.2f})"

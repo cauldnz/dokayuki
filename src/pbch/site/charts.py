@@ -110,7 +110,6 @@ def season_chart(weeks: list[dict], width: int = 640, height: int = 200) -> str:
     for v in (0, ymax / 2, ymax):
         parts.append(f'<text x="{pad_l - 4}" y="{Y(v) + 4:.1f}" text-anchor="end" font-size="10" fill="var(--muted)">{v:.0f}</text>')
         parts.append(f'<line x1="{pad_l}" y1="{Y(v):.1f}" x2="{width - pad_r}" y2="{Y(v):.1f}" stroke="var(--border)" stroke-width="1"/>')
-    parts.append(f'<text x="{pad_l}" y="{height - pad_b + 13}" text-anchor="end" font-size="9" fill="var(--muted)">called:</text>')
     return f'<svg class="season" viewBox="0 0 {width} {height}" width="100%" role="img" aria-labelledby="season-desc">' + "".join(parts) + "</svg>"
 
 

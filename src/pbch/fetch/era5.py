@@ -37,6 +37,9 @@ FIELDS_15 = {
     "sst":  ("sea_surface_temperature", None, "mean"),
     "t850": ("temperature", 850, "mean"),
     "z500": ("geopotential", 500, "mean"),   # geopotential (m2 s-2) -> height by /g
+    "u850": ("u_component_of_wind", 850, "mean"),
+    "v850": ("v_component_of_wind", 850, "mean"),
+    # u 10 hPa is not in the 13-level 1.5-degree store: CDS only
 }
 G0 = 9.80665
 
@@ -53,7 +56,7 @@ def months_mask(times: pd.DatetimeIndex, months: tuple[int, ...] | None) -> np.n
 
 def estimate_pull(fields: list[str], start: str, end: str, months: tuple[int, ...] | None) -> dict:
     """Rough download size in GB for the 1.5-degree store (chunk = 8 six-hourly steps)."""
-    per_chunk_mb = {"msl": 0.55, "t2m": 0.62, "tp": 0.83, "sst": 0.14, "t850": 7.8, "z500": 7.7}
+    per_chunk_mb = {"msl": 0.55, "t2m": 0.62, "tp": 0.83, "sst": 0.14, "t850": 7.8, "z500": 7.7, "u850": 7.8, "v850": 7.8}
     days = pd.date_range(start, end, freq="D")
     n_days = int(months_mask(days, months).sum())
     n_chunks = n_days / 2.0

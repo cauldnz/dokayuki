@@ -9,11 +9,16 @@ import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup
 
-from ..config import ROOT, load_indices, load_yaml
+from ..config import ROOT, load_indices, load_stage_names, load_yaml
 from . import charts
 
 SITE_DIR = ROOT / "site"
 INDEX_HELP = {
+    "U10_60N": "Zonal-mean 10 hPa zonal wind at 60°N, sign flipped so higher = a weaker polar vortex. A weak or disturbed vortex raises the odds of cold-air outbreaks into East Asia weeks later.",
+    "UBI": "500 hPa height anomaly over the Urals (about 45–70°N, 40–80°E). Ural blocking feeds the Siberian High and steers cold air east.",
+    "AO": "The model's own Arctic Oscillation: its sea-level pressure projected on the observed AO pattern, sign flipped so higher = negative AO = cold air spilling south.",
+    "NWF": "Mean 850 hPa wind component from the northwest over the Sea of Japan box. Northwesterly flow means a long fetch over warm water aimed at western Hokkaido.",
+    "SJI13": "Days in the week with sea-surface minus 850 hPa temperature at or above 13 °C over the Sea of Japan box: the count of snow-factory days.",
     "SHI": "Mean sea-level pressure over Mongolia and southern Siberia (40–65°N, 80–120°E). A strong Siberian High is the cold reservoir behind every outbreak. Higher = stronger high.",
     "ALI": "Mean sea-level pressure over the North Pacific (30–65°N, 160°E–140°W), sign flipped so higher = deeper Aleutian Low. Together with the Siberian High it sets the pressure gradient across Japan.",
     "MOI": "Pressure at Irkutsk minus pressure at Nemuro (the JMA winter monsoon index). Higher = stronger northwesterly monsoon flow over the Sea of Japan.",
@@ -32,7 +37,23 @@ def index_glyph(key: str) -> Markup:
         "SJC": '<path d="M8 30 Q20 10 32 30" fill="none" stroke="#fff" stroke-width="2"/><text x="20" y="14" text-anchor="middle" font-size="10" font-weight="900" fill="#fff">cold</text>',
         "SJI": '<path d="M6 30 q4-4 8 0 t8 0 t8 0 t8 0" fill="none" stroke="#fff" stroke-width="2"/><path d="M14 22 v-6 M20 22 v-9 M26 22 v-6" stroke="#fff" stroke-width="2"/>',
         "EAT": '<path d="M6 12 Q20 36 34 12" fill="none" stroke="#fff" stroke-width="2.5"/>',
+        "U10_60N": '<circle cx="20" cy="20" r="12" fill="none" stroke="#fff" stroke-width="2"/><path d="M20 8 a12 12 0 0 1 0 24" fill="#fff" opacity=".4"/>',
+        "UBI": '<rect x="9" y="9" width="22" height="22" rx="3" fill="none" stroke="#fff" stroke-width="2"/><text x="20" y="25" text-anchor="middle" font-size="12" font-weight="900" fill="#fff">B</text>',
+        "AO": '<circle cx="20" cy="20" r="12" fill="none" stroke="#fff" stroke-width="2"/><circle cx="20" cy="20" r="5" fill="#fff"/>',
+        "NWF": '<path d="M8 8 L30 30" stroke="#fff" stroke-width="2.5"/><path d="M22 30 h8 v-8" fill="none" stroke="#fff" stroke-width="2.5"/>',
+        "SJI13": '<text x="20" y="25" text-anchor="middle" font-size="13" font-weight="900" fill="#fff">13°</text>',
     }[key]
+    return Markup(f'<svg viewBox="0 0 40 40" aria-hidden="true">{g}</svg>')
+
+
+def stage_glyph(stage: int) -> Markup:
+    g = {
+        1: '<circle cx="20" cy="20" r="13" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 7 a13 13 0 0 1 0 26" fill="currentColor" opacity=".35"/><circle cx="20" cy="20" r="3" fill="currentColor"/>',
+        2: '<path d="M4 30 Q14 10 24 22 T36 14" fill="none" stroke="currentColor" stroke-width="2.5"/><path d="M30 10 l6 4 -6 4" fill="none" stroke="currentColor" stroke-width="2.5"/>',
+        3: '<path d="M6 20 H30" stroke="currentColor" stroke-width="2.5"/><path d="M24 13 l8 7 -8 7" fill="none" stroke="currentColor" stroke-width="2.5"/>',
+        4: '<path d="M6 30 q4-4 8 0 t8 0 t8 0 t8 0" fill="none" stroke="currentColor" stroke-width="2"/><path d="M14 22 v-8 M20 22 v-12 M26 22 v-8" stroke="currentColor" stroke-width="2.5"/>',
+        5: '<path d="M4 32 L16 12 L24 24 L30 16 L36 32 Z" fill="none" stroke="currentColor" stroke-width="2.5"/>',
+    }[stage]
     return Markup(f'<svg viewBox="0 0 40 40" aria-hidden="true">{g}</svg>')
 
 
@@ -64,6 +85,7 @@ def make_env() -> Environment:
     coast = charts.load_coast(SITE_DIR / "assets" / "geo" / "ne_110m_coastline.geojson")
     region = load_yaml("region")
     idx = load_indices()
+    stage_names = load_stage_names()
     boxes = {k: {"lat": list(v.box.lat), "lon": list(v.box.lon)} for k, v in idx.items() if v.box is not None and k in ("SHI", "ALI", "SJC", "EAT")}
     hok = region["masks"]["hokkaido_land"]
     env.globals.update(
@@ -75,6 +97,8 @@ def make_env() -> Environment:
         season_chart=lambda s: Markup(charts.season_chart(s)),
         map_file=lambda m, out: _write_map(m, out, coast, boxes, region, hok),
         index_glyph=index_glyph, index_help=lambda k: INDEX_HELP.get(k, ""), pipeline_svg=pipeline_svg,
+        stage_glyph=stage_glyph, stage_copy=lambda sid, mode: stage_names.get(int(sid), {}).get(mode, ""),
+        stage_name=lambda sid: stage_names.get(int(sid), {}).get("name", ""),
     )
     return env
 

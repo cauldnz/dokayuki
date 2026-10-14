@@ -5,13 +5,23 @@ Niseko, Kutchan, Otaru, Sapporo) from circulation indices calibrated with Probab
 Correction (PBC; Guan, Mouatadid et al., *Nature* 2026, doi:10.1038/s41586-026-11126-x),
 published daily to GitHub Pages.
 
-Status: Phase 0–2 complete (core + parity + leakage tests, data fetchers, ERA5-era index
+**Thesis.** The ingredients of Hokkaido snow are known and the models already simulate them;
+we claim no new physics. The project tests whether probabilistic bias correction finds
+correctable model error at weeks 3–4 and turns it into useful skill for Hokkaido snow. The
+headline metric is therefore the **lift** of the calibrated product over the operationally
+debiased and raw models, with block-bootstrap confidence intervals; the model's own skill, the
+PBC lift and the Stage-3 lift are always reported apart. The last three winters are sealed as
+a final exam and evaluated once. Every experiment is logged in `experiments/log.csv`.
+
+Status: Phase 0–2 complete, dashboard built on fixtures (core + parity + leakage tests, data fetchers, ERA5-era index
 analysis). Backtest, daily run and site follow. See `docs/`:
 
 - `docs/DATA_NOTES.md` sources, licences, latencies, every (verify) item
 - `docs/METHOD.md` index definitions with citations and the index-vs-snow analysis
 - `docs/BACKTEST.md` (Phase 3) honest skill against all baselines
-- `docs/DESIGN.md` (Phase 4) design tokens and screenshots
+- `docs/DESIGN.md` design tokens, Normie/Nerd modes, copy and citation rules, screenshots
+- `docs/REFERENCES_CHECK.md` every reference verified before it may appear on the site
+- `experiments/log.csv` every configuration evaluated
 
 ## Quick start
 

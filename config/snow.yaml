@@ -16,9 +16,19 @@ season:
   training_months: [11, 12, 1, 2, 3]   # NDJFM rows
   scoring_months: [12, 1, 2]           # DJF focus
   backtest_winters: ["2016/17", "2025/26"]
+  duet_validation_winter: "2016/17"
+  test_winters: ["2017/18", "2022/23"]           # tuning and model choice may look at these (nested, blocked CV)
+  locked_final_exam_winters: ["2023/24", "2024/25", "2025/26"]   # sealed; evaluated once at the end of v1
 stage3:
   features:
-    pbc_indices: [SHI, ALI, MOI, SJC, SJI, EAT]
+    # spec update 1: five-stage ingredient chain as feature groups (contributions reported per group)
+    groups:
+      trigger:  [U10_60N, UBI, AO]
+      outbreak: [SHI, MOI, ALI]
+      steering: [EAT, NWF]
+      fuel:     [SJI, SJI13]
+      delivery: []                                 # static (orography, JPCZ); explained, not fitted
+    pbc_indices: [U10_60N, UBI, AO, SHI, MOI, ALI, EAT, NWF, SJI, SJI13]
     index_summaries: [expected_quintile, p_top2]
     observed: [SHI_obs, ALI_obs, MOI_obs, SJC_obs, SJI_obs, EAT_obs, soj_sst_anom, ao, mjo_amp, mjo_cos, mjo_sin, u10_60n, snow_recent]
     season_terms: [doy_sin, doy_cos]

@@ -128,3 +128,21 @@ details p{font-size:.9rem;margin-top:8px}
   .headline{font-size:2.4rem}.hero{padding:88px 40px 56px}
 }
 @media (prefers-reduced-motion:no-preference){.card{transition:transform .15s ease}.card:hover{transform:translateY(-2px)}}
+
+/* ingredient chain */
+.chain-grid{display:grid;gap:12px;grid-template-columns:1fr}
+.stage{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);position:relative}
+.stage-head{display:flex;align-items:center;gap:8px;color:var(--primary);margin-bottom:4px}
+.stage-head svg{width:28px;height:28px}
+.stage-name{font-weight:900;text-transform:uppercase;letter-spacing:.05em;font-size:.85rem;color:var(--ink-strong)}
+.stage-line{font-size:1rem;margin-bottom:8px}
+.stage-states{display:flex;gap:6px;flex-wrap:wrap}
+.state{font-size:.75rem;font-weight:700;border-radius:999px;padding:3px 9px;border:1px solid var(--border);background:var(--bg-alt);color:var(--ink)}
+.state-lining-up{background:var(--snow-above);color:#fff;border-color:var(--snow-above)}
+.state-against{background:var(--snow-below);border-color:var(--snow-below);color:var(--ink-strong)}
+.stage-nerd{border-top:1px dashed var(--border);margin-top:8px;padding-top:8px}
+.nerd h3{font-size:1rem;margin-top:20px;text-transform:uppercase;letter-spacing:.04em}
+.refs li{margin:4px 0}
+.gag{font-size:.9rem;font-weight:700;color:var(--ink-strong)}.gag .muted{font-weight:400;font-size:.8rem}
+@media (min-width:640px){.chain-grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1024px){.chain-grid{grid-template-columns:repeat(5,1fr)}}

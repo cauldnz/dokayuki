@@ -40,11 +40,13 @@ VARIABLES = {
     "t850": ("pressure", "temperature", "850_hpa", "instant"),
     "z500": ("pressure", "geopotential_height", "500_hpa", "instant"),
     "u10hpa": ("pressure", "u_component_of_wind", "10_hpa", "instant"),
+    "u850": ("pressure", "u_component_of_wind", "850_hpa", "instant"),
+    "v850": ("pressure", "v_component_of_wind", "850_hpa", "instant"),
 }
 # fields each origin carries (from the ECDS constraints, 2026-10-14)
 AVAILABLE = {
-    "ecmwf": {"msl", "t2m", "tp", "sf", "sst", "t850", "z500", "u10hpa"},
-    "jma":   {"msl", "t2m", "tp", "sst", "t850", "z500", "u10hpa"},   # no snowfall
+    "ecmwf": {"msl", "t2m", "tp", "sf", "sst", "t850", "z500", "u10hpa", "u850", "v850"},
+    "jma":   {"msl", "t2m", "tp", "sst", "t850", "z500", "u10hpa", "u850", "v850"},   # no snowfall
 }
 LEAD_DAYS = (18, 33)   # covers week-3 (days 19-25) and week-4 (26-32) for leads 19 and 26
 

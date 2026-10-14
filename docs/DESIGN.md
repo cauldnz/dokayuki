@@ -41,7 +41,39 @@ Tokens are in `site/design-tokens.css`.
   (ink #3a3a3a on white 10.7:1; link #2f6aa8 on white 4.6:1; dark ink #e6e9ec on #0f1418 14:1).
 - No tracking, no cookies; the Nerd/Normie mode and theme preferences use `localStorage`.
 
-## Nerd Mode / Normie Mode
+## Nerd Mode / Normie Mode (spec update 1)
+
+Same page, two depths; **Nerd Mode is a first-class half of the product, not a footnote.**
+The toggle sits at the top, Normie is the default, the choice persists per viewer in
+`localStorage` (wrapped in try/catch) and `?mode=nerd` / `?mode=normie` shares a view.
+
+**Normie Mode** is the Book-ahead signal (working name; alternative "Beat-the-crowd signal",
+set in `config/site.yaml: wording.signal_name`): tercile bar, P(big week), signal grade and one
+plain line per week; the ingredient chain as five friendly cards (Trigger → Outbreak → Steering →
+Fuel → Delivery), each with an icon, a one-liner and a lining up / neutral / against state per
+week; "what's driving things now"; the safety line. Tone: a local's mate, not a met office.
+The running gag ("Japow. Alta pow. Albany pow.*", footnote "*Nobody has ever flown to Albany,
+NY for the powder. Probably.") appears once, in the footer.
+
+**Copy rule:** never imply certainty. "Week 3 looks better than week 4 for a trip", never
+"book Tuesday". No price data or booking links in v1.
+
+**Nerd Mode** adds, per ingredient, the mechanism, the index definition (formula, box, levels),
+why it matters at weeks 3–4, its PBC skill and **lift**, with author–year citations; and the
+sections Results (lift tables with CIs, reliability, ROC area, windows of opportunity,
+experiment-log summary, effective sample size), Methods, Limitations, Reproducibility (commit,
+state version, one command) and a numbered References list built from `references.bib`.
+
+**Skill badges lead with the lift** over the operationally debiased model with its 95 %
+interval; a non-significant lift reads "no demonstrated improvement over the raw model".
+
+**Citation rules (strict):** every factual or physical claim in nerd mode carries a citation;
+every reference is verified (DOI resolves; title, authors, year, venue match; the cited claim
+appears in the source) and logged in `docs/REFERENCES_CHECK.md`; unverified references never
+appear on the site; nothing is invented. If support cannot be found the claim is softened or
+removed.
+
+### Earlier mode notes
 
 **Normie Mode (default)** answers one question: *am I likely to get Japow in weeks 3 and 4?*
 It shows the headline, the two snow-week cards reduced to a tercile bar, the "big week" chip

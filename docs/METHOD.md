@@ -1,5 +1,45 @@
 # Method
 
+## 0. Thesis and the headline metric (spec update 1)
+
+The physical ingredients of Hokkaido snow are well known and the dynamical models already
+simulate them. **We claim no new physics.** The project tests one thing: whether the
+probabilistic bias correction of Guan, Mouatadid et al. (*Nature*, 2026) finds learnable,
+correctable model error at weeks 3–4 and turns it into useful skill for Hokkaido snow.
+
+- **The headline metric is the lift**: ΔRPSS (ΔBSS for the big week) of the PBC product minus
+  the **operationally debiased** model, and minus the **raw** model, per index and for the snow
+  outlook, at weeks 3 and 4, with block-bootstrap 95 % confidence intervals
+  (`pbch.score.lift`). Every skill table and dashboard badge shows the delta first; a
+  non-significant lift is reported as "no demonstrated improvement over the raw model" even when
+  absolute skill is positive.
+- **Three layers, kept apart**: the dynamical model's own skill, the lift from PBC, and the lift
+  from the Stage-3 ingredient model. Nothing of ECMWF's or JMA's skill is re-badged as ours.
+- **Built to withstand expert review**: no leakage (tests cover PBC, Stage 3, box choices and
+  threshold climatologies), confidence intervals on every number, physics before fitting (every
+  predictor carries a cited rationale), a paper-quality write-up, one-command reproducibility.
+
+### Overfitting guardrails
+
+The sample is about ten winters of ~13 DJF weeks, autocorrelated, so the effective sample is
+smaller still (`pbch.score.effective_n`). Rules, applied now and to all later tuning:
+
+1. **Locked final-exam block.** Winters 2023/24, 2024/25 and 2025/26 are sealed
+   (`config/snow.yaml: locked_final_exam_winters`; `pbch.experiments.assert_not_locked`). They are
+   evaluated once at the end of v1 and reported as the headline out-of-sample result. If any
+   decision is later made after looking at them, the write-up says so.
+2. **Nested, time-blocked cross-validation** (blocked by winter) for every tuning choice: the
+   Debias++ margin, the JMA lagged-ensemble size, regularisation strength, Duet weights.
+3. **Index boxes come from the literature** and are used as published in v1 (§2). Any later box
+   tuning is an experiment under rule 4.
+4. **Experiment log and budget.** `experiments/log.csv` records every configuration evaluated
+   (date, hypothesis, settings, CV score). The number of trials is reported beside the best
+   result and a deflated best-of-N skill is shown (`pbch.score.deflated_skill`, after White 2000
+   and Hansen 2005).
+5. **Prefer simplicity.** A more complex model is adopted only if it beats the simpler one by
+   more than its confidence interval in nested CV.
+6. **Effective sample size and block bootstrap everywhere** (never iid).
+
 ## 1. Pipeline in one paragraph
 
 Weekly fields from the ECMWF and JMA subseasonal ensembles (via the S2S database on ECDS) are
@@ -25,7 +65,31 @@ quantiles follow the reference "SUBS-M-climate" recipe (latest reforecast base d
 plus 4 before and **4 after**); `n_after` is a parameter and the backtest should report both
 settings.
 
-## 2. Index definitions, with what the literature says
+## 2. The ingredient chain and the index definitions
+
+Spec update 1 frames the physics as a five-stage chain. Each stage is a feature group of the
+Stage-3 snow model, and the dashboard shows each as a card with a normie line and a nerd block.
+The key correction to the earlier framing: **instability is the gap between the warm sea
+surface and the cold air at about 1.5 km, not the cold air alone.**
+
+| Stage | Ingredient | Indices | Normie line |
+|---|---|---|---|
+| 1 Trigger (the lead-time source) | polar vortex state and sudden warmings, Ural blocking, Arctic Oscillation | `U10_60N`, `UBI`, `AO` (promoted to first-class PBC targets; hemispheric 20–90°N fields, only the per-member index values stored) plus the observed values at issue time | "Signs up in the Arctic that a cold outbreak is on the way" |
+| 2 Outbreak | Siberian High, Irkutsk–Nemuro gradient, Aleutian Low | `SHI`, `MOI`, `ALI` | "Freezing air pouring off Siberia" |
+| 3 Steering | East Asian trough, low-level northwesterly flow | `EAT`, `NWF` (new: mean 850 hPa wind component from 315° over the Sea of Japan box) | "Wind pointing straight at Hokkaido" |
+| 4 Fuel / instability | SST − T850 | `SJI` (primary), `SJI13` (new: days in the week with SST − T850 ≥ 13 °C from daily member data); `SJC` kept as a diagnostic only | "Warm sea + freezing air = snow factory" |
+| 5 Delivery | orographic lift, JPCZ convergence | static; explained in nerd mode, not forecast at 1.5° | "Mountains wring it out" |
+
+Definitions of the new indices (`config/indices.yaml`, `pbch.indices`): `U10_60N` is the zonal
+mean of 10 hPa zonal wind at the lattice latitude nearest 60°N, sign reversed; `UBI` is the
+weekly 500 hPa height anomaly (minus the day-of-year climatology, or the hindcast climatology for
+members) averaged over 45–70°N, 40–80°E **(verify: box pending the verified literature
+definition in docs/REFERENCES_CHECK.md)**; `AO` projects each member's MSLP anomaly (20–90°N)
+onto the NOAA CPC AO loading pattern, scaled to standard-deviation units; `NWF` is
+(u − v)/√2 at 850 hPa averaged over the Sea of Japan box; `SJI13` counts the days in the week
+with box-mean SST − T850 ≥ 13 °C.
+
+### Index definitions, with what the literature says
 
 All indices are cos(latitude)-weighted means of **weekly-mean** fields on the 1.5° lattice,
 with the sign chosen so that **higher = more Hokkaido snow**. Boxes live in
@@ -54,6 +118,9 @@ doi:10.1007/s11430-026-2013-2); GloSea5 week-3 EAWM skill is limited by the Sibe
 weeks 3–4 directly. **Expect small RPSS.**
 
 ## 3. Which indices relate to western-Hokkaido snow in the ERA5 era?
+
+(The new Stage-1 and Stage-3/4 indices will be added to this analysis when the hemispheric
+history and the 850 hPa wind fields are pulled; see the TODO list.)
 
 Computed from the WeatherBench2 1.5° ERA5 store (DJF 1979/80–2022/23) with
 `scripts/analyze_indices.py`. **Caveat:** the 0.25° ERA5 snowfall needed for SNOW-W requires a
