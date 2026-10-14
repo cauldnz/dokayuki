@@ -4,7 +4,7 @@ import pandas as pd
 import xarray as xr
 
 from dokayuki.config import Box, IndexDef, load_indices
-from dokayuki.grid import area_mean, domain_lattice, box_mask, coarsen_block_mean
+from dokayuki.grid import area_mean, domain_lattice, coarsen_block_mean
 from dokayuki.indices import all_indices, cold_day_precip, index_value
 from dokayuki.weekly import weekly_from_daily
 

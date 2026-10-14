@@ -1,0 +1,37 @@
+# Manual publish to GitHub Pages. Nothing is deployed on a schedule until daily.yml is switched on.
+# "fixture" publishes a clearly labelled design preview; "latest" publishes site/build/latest from state.
+name: pages
+on:
+  workflow_dispatch:
+    inputs:
+      source:
+        description: "What to publish"
+        type: choice
+        options: [fixture-strong, fixture-none, fixture-stale, latest]
+        default: fixture-strong
+permissions: { contents: read, pages: write, id-token: write }
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }
+      - run: uv venv .venv --python 3.13 && uv pip install --python .venv/bin/python -e .
+      - name: Build
+        run: |
+          case "${{ inputs.source }}" in
+            fixture-*) .venv/bin/python scripts/build_site.py --fixture "${{ inputs.source#fixture-}}" --out site/build/publish --preview ;;
+            latest)    .venv/bin/python scripts/build_site.py --forecast state/latest.json --out site/build/publish ;;
+          esac
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: site/build/publish }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: ${{ steps.deployment.outputs.page_url }} }
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

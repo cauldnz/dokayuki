@@ -2,13 +2,11 @@
 permutation null. These are the tests that say 'the numbers mean what we claim'."""
 import numpy as np
 import pandas as pd
-import pytest
 import xarray as xr
 
 from conftest import GT_DELTA, K, LEAD
 from dokayuki.cdf import climatology_cdf, combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
 from dokayuki.pbc import run_pbc
-from dokayuki.project import cdf_to_bins
 from dokayuki.score import lift, reliability, rps, rpss
 from dokayuki.synth import SynthSpec, make_forecasts, make_truth_weekly
 from dokayuki.thresholds import indicators, observed_thresholds

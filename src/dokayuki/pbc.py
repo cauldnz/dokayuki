@@ -9,7 +9,6 @@ import xarray as xr
 from .debiaspp import CANDIDATES, tune_debiaspp
 from .persistpp import persistpp
 from .project import project_cdf
-from .thresholds import K_DIM, TIME
 
 
 @dataclass

@@ -14,6 +14,7 @@
   </div>
 </section>
 
+{% if d.preview %}<div class="banner banner-stale" role="status"><strong>Design preview.</strong> Every number on this page is fixture data for layout review, not a forecast.</div>{% endif %}
 {% if d.stale %}<div class="banner banner-stale" role="status">Upstream data has not arrived since {{ d.stale_since }}. This is the last good outlook; treat it as ageing.</div>{% endif %}
 {% if not d.snow_model.skilful %}<div class="banner banner-warn" role="status">The snow mapping is <strong>not yet skilful</strong> in the backtest (RPSS {{ d.snow_model.skill.rpss|num }}, {{ d.snow_model.skill.period }}), so the snow-week calls below are shown greyed out. The circulation indices are the product.</div>{% endif %}
 

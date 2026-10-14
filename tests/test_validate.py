@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 
 from dokayuki.site.fixtures import make_state
-from dokayuki.validate import (FIELD_RANGES, ValidationError, check_bins, check_cdf, check_daily_fields,
+from dokayuki.validate import (ValidationError, check_bins, check_cdf, check_daily_fields,
                            check_forecast_json, check_thresholds, implausible_skill)
 
 

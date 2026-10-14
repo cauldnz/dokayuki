@@ -6,7 +6,7 @@ import xarray as xr
 
 from conftest import GT_DELTA, K, LEAD
 from dokayuki.cdf import climatology_cdf, combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
-from dokayuki.debiaspp import debiaspp, tune_debiaspp
+from dokayuki.debiaspp import debiaspp
 from dokayuki.persistpp import persistpp, rolling_climatology
 from dokayuki.pbc import run_pbc
 from dokayuki.project import cdf_to_bins, project_cdf

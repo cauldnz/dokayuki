@@ -5,7 +5,6 @@ and shows the stale banner when a check fails).
 from __future__ import annotations
 
 import datetime as dt
-import math
 from dataclasses import dataclass, field
 
 import numpy as np

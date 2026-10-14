@@ -2,7 +2,10 @@
 
 Usage: python scripts/pull_era5_15.py --fields msl,t2m,tp,sst --start 1979-10-15 --end 2023-01-10 --months 10,11,12,1,2,3,4
 """
-import argparse, logging, sys, time
+import argparse
+import logging
+import sys
+import time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from dokayuki.config import RegionConfig

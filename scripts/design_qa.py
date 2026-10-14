@@ -1,5 +1,6 @@
 """Design QA: render the three fixture states at 375/768/1280 px in light and dark modes, both modes."""
-import subprocess, sys
+import subprocess
+import sys
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,7 +10,8 @@ for fixture in ("strong", "none", "stale"):
     build = ROOT / "site" / "build" / fixture
     subprocess.run([PY, str(ROOT / "scripts" / "build_site.py"), "--fixture", fixture, "--out", str(build)], check=True)
 with sync_playwright() as p:
-    import glob, os
+    import glob
+    import os
     exe = os.environ.get("CHROMIUM_PATH") or next(iter(sorted(glob.glob("/opt/pw-browsers/chromium*/chrome-linux*/chrome")) + sorted(glob.glob("/opt/pw-browsers/chromium*/chrome-linux*/headless_shell"))), None)
     browser = p.chromium.launch(executable_path=exe) if exe else p.chromium.launch()
     for fixture in ("strong", "none", "stale"):

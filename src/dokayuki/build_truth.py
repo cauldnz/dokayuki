@@ -4,12 +4,11 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .config import Box, IndexDef, RegionConfig, SnowConfig, load_indices
-from .grid import LAT, LON, area_mean, box_mask
+from .config import Box, IndexDef, RegionConfig, SnowConfig
+from .grid import area_mean
 from .indices import all_indices, cold_day_precip
 from .weekly import weekly_from_daily
 

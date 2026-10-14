@@ -1,0 +1,45 @@
+# The daily run. Scheduled at 06:00 UTC (runs that landed 48 h after init). Deploys only when
+# the repository variable DOKAYUKI_PUBLISH is "true"; until then it builds, validates and uploads
+# the site as an artifact so a run can be inspected without publishing.
+name: daily
+on:
+  schedule: [{ cron: "0 6 * * *" }]
+  workflow_dispatch:
+permissions: { contents: write, pages: write, id-token: write }
+concurrency: { group: daily, cancel-in-progress: false }
+env:
+  ECDS_URL: ${{ secrets.ECDS_URL }}
+  ECDS_KEY: ${{ secrets.ECDS_KEY }}
+  CDSAPI_URL: ${{ secrets.CDSAPI_URL }}
+  CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }
+      - run: uv venv .venv --python 3.13 && uv pip install --python .venv/bin/python -e ".[fetch]"
+      - name: Download state (latest release)
+        run: .venv/bin/python scripts/state_release.py download
+        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+      - name: Daily run (append new data, refit, forecast, validate, build; stale fallback on failure)
+        run: .venv/bin/python scripts/daily.py --budget-min 30
+      - name: Upload state (new release, keep last 5)
+        if: success()
+        run: .venv/bin/python scripts/state_release.py upload --keep 5
+        env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+      - uses: actions/upload-artifact@v4
+        with: { name: site, path: site/build/latest }
+      - uses: actions/upload-pages-artifact@v3
+        if: vars.DOKAYUKI_PUBLISH == 'true'
+        with: { path: site/build/latest }
+  deploy:
+    needs: run
+    if: vars.DOKAYUKI_PUBLISH == 'true'
+    runs-on: ubuntu-latest
+    environment: { name: github-pages, url: ${{ steps.deployment.outputs.page_url }} }
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

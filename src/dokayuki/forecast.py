@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from .config import IndexDef, load_stage_names
+from .config import IndexDef
 from .project import cdf_to_bins
 from .site.schema import STAGES, expected_quintile, headline, index_line, lift_badge, signal_grade, stage_state, week_line
 from .weekly import forecast_delta
@@ -33,7 +33,6 @@ def assemble_forecast(issued: dt.date, init: dt.date, index_cdfs: dict[int, xr.D
     snow: None (not skilful / absent) or {lead: {"terciles": {...}, "big_week": p, "factors": [...], "skill": {...}, "lift": {...}}}.
     """
     names = names or {}
-    stage_names = load_stage_names()
     skilful = snow is not None and all(snow[l].get("skill", {}).get("rpss") is not None for l in (19, 26))
     weeks = []
     for lead in (19, 26):

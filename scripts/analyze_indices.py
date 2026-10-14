@@ -4,10 +4,12 @@ Writes docs/analysis/index_vs_snow.md (tables) and docs/analysis/*.png, from sta
 Snow proxy: until CDS snowfall is available, uses the 1.5-degree cold-day precipitation over the
 SNOW-W box (precip on days with box-mean T850 <= -6 C) and plain box precipitation.
 """
-import logging, sys
+import logging
+import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-import numpy as np, pandas as pd, xarray as xr
+import numpy as np
+import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt

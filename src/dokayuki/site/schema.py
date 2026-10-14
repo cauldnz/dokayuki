@@ -1,7 +1,6 @@
 """Forecast JSON (latest.json) helpers: signal grades, plain-English lines, headline guarded by skill."""
 from __future__ import annotations
 
-import numpy as np
 
 INDEX_PLAIN = {
     "SHI": ("Siberian High", "stronger than normal", "weaker than normal"),

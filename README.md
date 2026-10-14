@@ -25,6 +25,14 @@ analysis). Backtest, daily run and site follow. See `docs/`:
 - `docs/REFERENCES_CHECK.md` every reference verified before it may appear on the site
 - `experiments/log.csv` every configuration evaluated
 
+## Agent skills
+
+This repo is set up for Matt Pocock's engineering skills (`.claude/skills/`, installed with
+`npx skills@latest add mattpocock/skills -a claude-code -s '*' --copy`; update with
+`npx skills update -p`). Per-repo configuration lives in `CLAUDE.md` and `docs/agents/`:
+GitHub Issues as the tracker, the five default triage labels, single-context domain docs
+(`GLOSSARY.md`, `docs/adr/`).
+
 ## Quick start
 
 ```bash

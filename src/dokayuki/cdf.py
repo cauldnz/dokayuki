@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 
 from .thresholds import K_DIM, TIME
-from .weekly import forecast_delta, shift_years
+from .weekly import forecast_delta
 
 MEMBER = "member"
 
@@ -24,6 +24,30 @@ def members_to_cdf(members: xr.DataArray, thr: xr.DataArray) -> xr.DataArray:
     below = (m < q).where(m.notnull())
     f = below.mean(MEMBER, skipna=True)
     return f.transpose(TIME, K_DIM, ...).rename("cdf")
+
+
+def members_to_cdf_by_issue(members: xr.DataArray, thr_by_issue: xr.DataArray) -> xr.DataArray:
+    """F[time, k, target] for rows that carry an ``issue`` coordinate (reforecast rows placed on a
+    time axis with duplicates): thresholds are looked up per row by its issuance date (model
+    thresholds), so no alignment on ``time`` is needed."""
+    iss = members["issue"].values
+    have = thr_by_issue.get_index("issue")
+    keep = np.isin(iss, have.values)
+    m = members.isel({TIME: keep})
+    q = thr_by_issue.sel(issue=xr.DataArray(m["issue"].values, dims=[TIME]))     # (time, k, target)
+    q = q.drop_vars("issue", errors="ignore").assign_coords({TIME: m[TIME].values})
+    mv = m.transpose(TIME, MEMBER, ...).values[:, :, None, :]
+    qv = q.transpose(TIME, K_DIM, ...).values[:, None, :, :]
+    below = (mv < qv).astype("float64")
+    below[np.isnan(mv).repeat(qv.shape[2], axis=2)] = np.nan
+    with np.errstate(invalid="ignore"):
+        f = np.nanmean(below, axis=1)
+    out = xr.DataArray(f, dims=(TIME, K_DIM) + tuple(d for d in m.dims if d not in (TIME, MEMBER)),
+                       coords={TIME: m[TIME].values, K_DIM: thr_by_issue[K_DIM].values, **{d: m[d] for d in m.dims if d not in (TIME, MEMBER)}})
+    for c in ("origin", "issue"):
+        if c in m.coords:
+            out = out.assign_coords({c: (TIME, m[c].values)})
+    return out.rename("cdf")
 
 
 def reforecast_to_time(reforecast: xr.DataArray, lead: int) -> xr.DataArray:

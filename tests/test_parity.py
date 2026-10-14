@@ -10,7 +10,7 @@ import xarray as xr
 
 from dokayuki.cdf import combine_forecast_reforecast, forecast_to_time, members_to_cdf, reforecast_to_time
 from dokayuki.debiaspp import CANDIDATES, debiaspp, tune_debiaspp
-from dokayuki.grid import cos_weights, domain_lattice, stack_targets, unstack_targets
+from dokayuki.grid import domain_lattice, stack_targets, unstack_targets
 from dokayuki.config import Box
 from dokayuki.persistpp import persistpp
 from dokayuki.project import project_cdf

@@ -4,14 +4,11 @@ alternatives for every chart, page weight, and the Normie/Nerd toggle behaviour 
 import datetime as dt
 import glob
 import json
-import os
 import re
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pytest
-import xarray as xr
 
 from conftest import GT_DELTA, K, LEAD
 from dokayuki.config import load_indices
