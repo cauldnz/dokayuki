@@ -1,0 +1,145 @@
+# Circulation indices. Each is a cos(latitude)-weighted mean of a weekly field
+# over a box, with a sign so that "high = more Hokkaido snow".
+# Boxes are starting points from the literature; see docs/METHOD.md.
+indices:
+  SHI:
+    name: Siberian High intensity
+    field: msl
+    box: {lat: [40.0, 65.0], lon: [80.0, 120.0]}
+    sign: 1
+    units: hPa           # reported as (pressure - 1000 hPa)
+    scale: 0.01          # Pa -> hPa
+    offset: 100000.0
+    plain: "Siberian High"
+  ALI:
+    name: Aleutian Low intensity
+    field: msl
+    box: {lat: [30.0, 65.0], lon: [160.0, 220.0]}
+    sign: -1             # report -(pressure - 1000 hPa): high = deep low
+    units: hPa
+    scale: 0.01
+    offset: 100000.0
+    plain: "Aleutian Low"
+  MOI:
+    name: Winter monsoon index (Irkutsk minus Nemuro)
+    field: msl
+    point_difference:
+      a: {lat: 52.3, lon: 104.3}    # Irkutsk
+      b: {lat: 43.3, lon: 145.6}    # Nemuro
+    sign: 1
+    units: hPa
+    scale: 0.01
+    plain: "Monsoon gradient"
+  MOI_box:
+    name: Winter monsoon index (box variant)
+    field: msl
+    box_difference:
+      a: {lat: [45.0, 60.0], lon: [95.0, 115.0]}
+      b: {lat: [35.0, 50.0], lon: [140.0, 155.0]}
+    sign: 1
+    units: hPa
+    scale: 0.01
+    plain: "Monsoon gradient (box)"
+  SJC:
+    name: Sea-of-Japan cold air
+    field: t850
+    box: {lat: [38.0, 46.0], lon: [132.0, 141.0]}
+    sign: -1             # high = colder
+    units: degC          # reported as -(T850 in C)
+    scale: 1.0
+    offset: 273.15
+    plain: "Sea-of-Japan cold air"
+  SJI:
+    name: Sea-of-Japan instability (SST minus T850)
+    field: t850
+    sst_minus: true      # (persisted SST anomaly + SST climatology) - T850
+    box: {lat: [38.0, 46.0], lon: [132.0, 141.0]}
+    sign: 1
+    units: K
+    scale: 1.0
+    plain: "Instability over the sea"
+  EAT:
+    name: East Asian trough
+    field: z500
+    box: {lat: [30.0, 45.0], lon: [125.0, 145.0]}
+    sign: -1             # high = deeper trough
+    units: m             # reported as -(Z500 - 5500 m)
+    scale: 1.0
+    offset: 5500.0
+    plain: "East Asian trough"
+
+  # ---- Spec update 1: the five-stage ingredient chain. Stage labels drive the dashboard groups.
+  # Stage 1 (trigger) targets need hemispheric fields (20-90N, all longitudes); only the derived
+  # per-member index values are stored for that part (config/region.yaml: domain_hemispheric).
+  U10_60N:
+    name: Zonal-mean 10 hPa zonal wind at 60N (polar vortex strength)
+    field: u10hpa
+    zonal_mean_lat: 60.0
+    sign: -1             # high = weaker vortex = more favourable for cold outbreaks weeks later
+    units: "m s-1"
+    scale: 1.0
+    stage: 1
+    plain: "Polar vortex"
+    verify: "S2S carries 10 hPa u for ecmwf and jma per the ECDS constraints; confirm in the first GRIB"
+  UBI:
+    name: Ural blocking index (500 hPa height anomaly)
+    field: z500
+    box: {lat: [45.0, 70.0], lon: [40.0, 80.0]}
+    anomaly: true        # weekly value minus the day-of-year climatology (truth) / hindcast climatology (model)
+    sign: 1
+    units: m
+    scale: 1.0
+    stage: 1
+    plain: "Ural blocking"
+    verify: "box pending the verified literature definition (docs/REFERENCES_CHECK.md)"
+  AO:
+    name: Model-derived Arctic Oscillation (projection of MSLP on the CPC loading pattern)
+    field: msl
+    ao_projection: true  # needs state/ao_loading_pattern.nc (CPC EOF1 of 1000 hPa height, 20-90N)
+    sign: -1             # high = negative AO = cold air spills south
+    units: "std"
+    scale: 1.0
+    stage: 1
+    plain: "Arctic Oscillation"
+  NWF:
+    name: Low-level northwesterly flow over the Sea of Japan (850 hPa wind from 315 deg)
+    field: u850          # needs u850 and v850; component from 315 deg = (-u + v) / sqrt(2)
+    nw_flow: true
+    box: {lat: [38.0, 46.0], lon: [132.0, 141.0]}
+    sign: 1
+    units: "m s-1"
+    scale: 1.0
+    stage: 3
+    plain: "Wind pointing at Hokkaido"
+  SJI13:
+    name: Days in the week with SST - T850 >= 13 C over the Sea of Japan box
+    field: t850
+    sji_days: true       # from daily member data; threshold below
+    threshold_c: 13.0
+    box: {lat: [38.0, 46.0], lon: [132.0, 141.0]}
+    sign: 1
+    units: days
+    scale: 1.0
+    stage: 4
+    plain: "Snow-factory days"
+
+# stage of the existing indices (used by the dashboard and Stage-3 feature groups)
+stages:
+  SHI: 2
+  ALI: 2
+  MOI: 2
+  MOI_box: 2
+  EAT: 3
+  SJI: 4
+  SJC: 4            # diagnostic only (not a headline card)
+  NWF: 3
+  SJI13: 4
+  U10_60N: 1
+  UBI: 1
+  AO: 1
+stage_names:
+  1: {name: Trigger, normie: "Signs up in the Arctic that a cold outbreak is on the way", nerd: "Downward coupling of a weak or displaced polar vortex, Ural blocking and the AO raise the odds of cold-air outbreaks into East Asia weeks later"}
+  2: {name: Outbreak, normie: "Freezing air pouring off Siberia", nerd: "East Asian winter monsoon surge: the Siberian High to Aleutian Low pressure gradient drives cold northwesterly flow over the Sea of Japan"}
+  3: {name: Steering, normie: "Wind pointing straight at Hokkaido", nerd: "Trough position and the low-level wind direction set the fetch and where the snow bands make landfall"}
+  4: {name: Fuel, normie: "Warm sea + freezing air = snow factory", nerd: "Sea-effect instability: convective bands are favoured when SST minus T850 exceeds about 13 C, roughly the dry-adiabatic lapse rate over 1.5 km"}
+  5: {name: Delivery, normie: "Mountains wring it out", nerd: "Orographic enhancement over Hokkaido's terrain and the JPCZ convergence band; static at 1.5 degrees, explained but not forecast"}

@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+state/*
+!state/README.md
+site/build/
+*.grib
+*.grib2
+*.idx
+.cdsapirc
+.ecdsrc
+*.egg-info/
+.ruff_cache/
+docs/screenshots/*.tmp
+logs/

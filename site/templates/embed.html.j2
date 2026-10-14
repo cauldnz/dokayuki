@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>{{ site.site_title }} — embed</title>
+<link rel="stylesheet" href="assets/fonts/lato.css"><link rel="stylesheet" href="design-tokens.css"><link rel="stylesheet" href="static/style.css"></head>
+<body class="embed-body">
+<a class="embed-card" href="{{ site.site_url }}" target="_top">
+  <div class="embed-head"><img src="{{ site.brand.logo }}" alt="" width="19" height="50"><strong>{{ site.site_title }}</strong><span class="muted">issued {{ d.issued }}</span></div>
+  <p class="embed-headline">{{ d.headline }}</p>
+  {% for w in d.weeks %}
+  <div class="embed-week{% if not d.snow_model.skilful %} card-muted{% endif %}">
+    <div class="embed-row"><span>{{ w.label }} · {{ w.valid[0][5:] }}–{{ w.valid[1][5:] }}</span><span class="grade grade-{{ w.grade|lower|replace(' ', '-') }}"><span class="grade-dot"></span>{{ w.grade }}</span></div>
+    {{ tercile_bar(w.terciles, 320, 18, "e-" ~ w.lead) }}
+    <p id="e-{{ w.lead }}" class="sr-only">{{ w.label }}: below {{ pct(w.terciles.below) }}%, near {{ pct(w.terciles.near) }}%, above {{ pct(w.terciles.above) }}%.</p>
+  </div>
+  {% endfor %}
+  <p class="embed-foot">Weeks 3–4 · not an avalanche or weather forecast · part of HokkaidoWilds.org</p>
+</a>
+</body></html>

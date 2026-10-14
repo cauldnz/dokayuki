@@ -1,0 +1,31 @@
+{% extends "base.html.j2" %}
+{% block content %}
+<article class="prose">
+<h1>How this outlook is made, and how much to trust it</h1>
+<p class="lede">Snow three or four weeks out is close to unpredictable on its own. The large-scale ingredients that make it snow on the Sea of Japan side, a strong Siberian High, a tight pressure gradient across Japan, cold air and an unstable sea, are a little more predictable. So we forecast those, calibrate them, and only then map them to snow.</p>
+<figure class="pipeline">{{ pipeline_svg() }}<figcaption>ECMWF and JMA ensembles → per-member indices → Probabilistic Bias Correction → calibrated index odds (+ things we can see now) → snow-week odds.</figcaption></figure>
+<h2>The method in plain English</h2>
+<ol>
+<li><strong>Two models, many members.</strong> We take the ECMWF and JMA subseasonal ensembles and compute, for every member, a handful of circulation indices for weeks 3 and 4.</li>
+<li><strong>Calibration (PBC).</strong> Models have habits. Probabilistic Bias Correction (Guan, Mouatadid et al., 2026, arXiv:2604.16238) learns from 20 years of reforecasts how often "the model said 70 %" really happened, for this time of year, and corrects the odds. It blends a direct correction (Debias++) with a small regression on recent observations (Persistence++).</li>
+<li><strong>Snow mapping.</strong> A small statistical model turns the calibrated index odds, plus what we can already see (Arctic Oscillation, MJO, polar vortex, sea temperature, recent snow), into the odds of a below/near/above-normal snow week and of a big snow week.</li>
+<li><strong>Honesty rule.</strong> The snow call is only shown if it beats climatology and the raw model snowfall in a ten-winter backtest. Otherwise the page says so and shows the indices only.</li>
+</ol>
+<h2>Backtest</h2>
+<p class="muted">{{ d.backtest.note }}</p>
+<table class="data-table"><thead><tr><th>Snow model vs baselines</th><th>RPSS week 3</th><th>RPSS week 4</th></tr></thead><tbody>
+{% for r in d.backtest.snow %}<tr><td>{{ r.model }}</td><td>{{ r.rpss19|num }}</td><td>{{ r.rpss26|num }}</td></tr>{% endfor %}</tbody></table>
+<table class="data-table"><thead><tr><th>Index</th><th>RPSS week 3</th><th>RPSS week 4</th></tr></thead><tbody>
+{% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ ix.skill['19'].rpss|num }}</td><td>{{ ix.skill['26'].rpss|num }}</td></tr>{% endfor %}</tbody></table>
+<p>Full tables, reliability diagrams and the windows-of-opportunity analysis: <code>docs/BACKTEST.md</code> in the repository.</p>
+<h2>Limitations</h2>
+<ul>
+<li>Skill at weeks 3–4 is small even when real: expect RPSS of a few hundredths. A "Strong" grade means the odds moved a lot <em>and</em> the backtest says that movement is worth something, not that snow is guaranteed.</li>
+<li>Probabilities are rounded to 5 %. We never publish a centimetre number for a week a month away.</li>
+<li>The snow truth is ERA5 snowfall over a western-Hokkaido box, checked against AMeDAS stations (Kutchan, Sapporo, Otaru, Asahikawa). Niseko has no snow-reporting station.</li>
+<li>This is a personal, non-commercial research project and <strong>not</strong> an avalanche or mountain weather forecast.</li>
+</ul>
+<h2>Attribution</h2>
+<ul>{% for a in site.attribution %}<li>{{ a }}</li>{% endfor %}</ul>
+</article>
+{% endblock %}

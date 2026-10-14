@@ -1,0 +1,35 @@
+name: tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with: { enable-cache: true }
+      - name: Install
+        run: |
+          uv venv .venv --python 3.13
+          uv pip install --python .venv/bin/python -e ".[dev]"
+          .venv/bin/python -m playwright install --with-deps chromium
+      - name: Lint
+        run: .venv/bin/ruff check src tests scripts
+      - name: Unit, parity, leakage, invariant, statistical and end-to-end tests
+        run: .venv/bin/python -m pytest -q -p no:warnings --timeout 1500
+      - name: Design QA (fixture states, both modes, light and dark)
+        run: .venv/bin/python scripts/design_qa.py
+      - name: Validation report
+        run: .venv/bin/python scripts/validation_report.py > validation_report.md && cat validation_report.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: design-qa-and-validation
+          path: |
+            docs/screenshots/*.png
+            validation_report.md

@@ -1,0 +1,41 @@
+# Site identity, links and brand assets (no hard-coding in templates).
+site_title: "Hokkaido Powder Outlook"
+tagline: "weeks 3 & 4"
+site_url: "https://cauldnz.github.io/dokayuki/"
+author_name: "Chris Auld"
+author_url: "https://hokkaidowilds.org/author/chris/"      # TODO confirm author page URL
+hw_home_url: "https://hokkaidowilds.org"
+hw_post_url: ""                                              # related HokkaidoWilds blog post (optional)
+brand:
+  logo: "assets/brand/hokkaidowilds-logo.png"                # official diamond logo from the live site, unaltered
+  mark: "assets/brand/hokkaidowilds-mark-270.png"
+  hero_image: ""                                             # drop a HokkaidoWilds photo in site/assets/photos/ and reference it here
+  hero_credit: ""
+wording:
+  signal_name: "Book-ahead signal"          # alternative: "Beat-the-crowd signal"
+  signal_blurb: "Weeks 3 and 4 are when you can still act: get leave approved, book flights while they're cheap and grab a room before the crowd notices. We can't promise snow; we can shift the odds early. \"Week 3 looks better than week 4 for a trip\", never \"book Tuesday\"."
+  gag: "Japow. Alta pow. Albany pow.*"
+  gag_footnote: "*Nobody has ever flown to Albany, NY for the powder. Probably."
+modes:
+  default: normie                                            # "normie" | "nerd"
+  storage_key: "hpo-mode"                                    # localStorage key (no cookies, no tracking)
+language:
+  ja_toggle: true
+safety:
+  line: "This is not an avalanche or mountain weather forecast."
+  links:
+    - {name: "JMA warnings and advisories (気象警報・注意報)", url: "https://www.jma.go.jp/bosai/warning/"}
+    - {name: "Japan Avalanche Network bulletins (日本雪崩ネットワーク)", url: "https://data.nadare.jp/avalanche_informations"}
+    - {name: "Niseko Avalanche Information (ニセコ雪崩情報)", url: "http://niseko.nadare.info/"}
+    - {name: "HokkaidoWilds: avalanche bulletins for central Hokkaido", url: "https://hokkaidowilds.org/avalanche-bulletins-for-central-hokkaido"}
+attribution:
+  - "Contains modified ECMWF data (CC BY 4.0), via the S2S database"
+  - "JMA data via the S2S database, CC BY-NC 4.0 — non-commercial use"
+  - "ERA5: Copernicus Climate Change Service (C3S), ECMWF"
+  - "AMeDAS: 出典：気象庁ホームページ"
+  - "Arctic Oscillation index: NOAA Climate Prediction Center"
+  - "MJO RMM index: Australian Bureau of Meteorology"
+  - "Method: Probabilistic Bias Correction, Guan, Mouatadid et al. (2026), arXiv:2604.16238 (the Nature DOI in the brief did not resolve on 2026-10-14); code github.com/mouatadid/pbc (MIT)"
+licence:
+  code: "MIT"
+  products: "CC BY-NC 4.0"
