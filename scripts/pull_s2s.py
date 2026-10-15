@@ -1,5 +1,5 @@
-"""S2S members from ECDS: ECMWF and JMA, forecasts and reforecasts, one request per month and
-level type (ECDS accepts a list of init days; the GRIB then carries a ``time`` axis), days 18-33,
+"""S2S members from ECDS: ECMWF and JMA, forecasts and reforecasts, one job per month (control
+and perturbed together), one request per level type (ECDS accepts a list of init days; the GRIB then carries a ``time`` axis), days 18-33,
 the domain box plus three small hemispheric parts for the stage-1 targets. Resumable (request ids
 in state/requests.json). GRIB is decoded to weekly per-member index values appended to
 state/members/; the GRIB files stay under state/grib/ unless --delete-grib.
@@ -73,12 +73,25 @@ def to_members(idx: xr.DataArray, req: dict, reforecast: bool) -> xr.DataArray:
     return idx.transpose("issue", "hyear", "member", "target")
 
 
+def _open_parts(parts: dict[str, Path], prefix: str) -> xr.Dataset | None:
+    """Open the GRIBs whose part name starts with ``prefix`` (any forecast type) and concatenate
+    control (number 0) and perturbed (1..N) members on ``number``."""
+    by_suffix: dict[str, list[xr.Dataset]] = {}
+    for name, path in parts.items():
+        ft, _, rest = name.partition("_")
+        if rest.startswith(prefix):
+            by_suffix.setdefault(rest, []).append(open_grib_daily(path))
+    if not by_suffix:
+        return None
+    merged = [xr.concat(dss, dim="number").sortby("number") if len(dss) > 1 else dss[0] for dss in by_suffix.values()]
+    return xr.merge(merged)
+
+
 def decode(parts: dict[str, Path], defs, lead_days=(19, 26)) -> dict[int, xr.DataArray]:
-    """{part: grib path} for one (origin, month, type) -> {lead: DataArray(number, time, target)}."""
+    """{part: grib path} for one (origin, month), both forecast types -> {lead: DataArray(number, time, target)}."""
     out = {}
-    dom = [open_grib_daily(p) for k, p in parts.items() if k.startswith("dom")]
-    hemi = {k: open_grib_daily(p) for k, p in parts.items() if not k.startswith("dom")}
-    ds_dom = xr.merge(dom) if dom else None
+    ds_dom = _open_parts(parts, "dom")
+    hemi = {k: _open_parts(parts, k) for k in ("ao", "ural", "u10")}
     for lead in lead_days:
         pieces = []
         if ds_dom is not None:
@@ -86,8 +99,9 @@ def decode(parts: dict[str, Path], defs, lead_days=(19, 26)) -> dict[int, xr.Dat
             pieces.append(all_indices({k: v for k, v in defs.items() if k not in STAGE1}, {v: wk[v] for v in wk.data_vars}, skip_missing=True))
         hf = {}
         for k, ds in hemi.items():
-            wk = weekly_fields(ds, lead)
-            hf.update({v: wk[v] for v in wk.data_vars})
+            if ds is not None:
+                wk = weekly_fields(ds, lead)
+                hf.update({v: wk[v] for v in wk.data_vars})
         if hf:
             pieces.append(all_indices({k: v for k, v in defs.items() if k in STAGE1}, hf, skip_missing=True))
         out[lead] = xr.concat(pieces, dim="target")
@@ -121,13 +135,13 @@ def main():
                     continue
                 init = pd.Timestamp(int(y), int(m), days[0])
                 hy = list(range(int(y) - 20, int(y))) if (is_rf and origin == "ecmwf") else (list(range(1991, 2021)) if is_rf else None)
+                parts = []   # both forecast types in one job so control and perturbed members land together
                 for ft in ("control_forecast", "perturbed_forecast"):
-                    parts = []
                     for req in build_request(origin, init, FIELDS_DOMAIN, cfg.domain, ft, reforecast=is_rf, hyears=hy, days=days):
-                        parts.append((f"dom_{part_name(req)}", req))
-                    parts += hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)
-                    tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}_{ft[:4]}"
-                    jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
+                        parts.append((f"{ft[:4]}_dom_{part_name(req)}", req))
+                    parts += [(f"{ft[:4]}_{part}", req) for part, req in hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)]
+                tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}"
+                jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
     todo = [j for j in jobs if not all(t.exists() for _, _, t in j[3])]
     n_req = sum(len(j[3]) for j in jobs)
     log.info("%d jobs (%d requests) planned, %d jobs to do", len(jobs), n_req, len(todo))
