@@ -1,5 +1,10 @@
 # Design
 
+**Visual system (2026-10-15):** the author's house system. Paper, ink, hairlines, mono tabular
+numbers, one vermilion mark per figure (the favoured tercile or bin), IBM Plex. No cards, shadows,
+pills, badges, gradients or icons. The HokkaidoWilds tie is the diamond logo, the "part of" line
+and the credits. The HokkaidoWilds palette notes below are kept for provenance only.
+
 The dashboard is a HokkaidoWilds-family page, so its tokens come from the live site
 (https://hokkaidowilds.org, WordPress + Astra theme + Elementor; studied 2026-10-14: homepage,
 the ski-touring listing `/skitour`, and the route page `/ski-touring/hobetsu-bozu-yama`).

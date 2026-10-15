@@ -13,10 +13,10 @@
 </ol>
 <h2>Backtest</h2>
 <p class="muted">{{ d.backtest.note }}</p>
-<table class="data-table"><thead><tr><th>Snow model vs baselines</th><th>RPSS week 3</th><th>RPSS week 4</th></tr></thead><tbody>
-{% for r in d.backtest.snow %}<tr><td>{{ r.model }}</td><td>{{ r.rpss19|num }}</td><td>{{ r.rpss26|num }}</td></tr>{% endfor %}</tbody></table>
-<table class="data-table"><thead><tr><th>Index</th><th>RPSS week 3</th><th>RPSS week 4</th></tr></thead><tbody>
-{% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ ix.skill['19'].rpss|num }}</td><td>{{ ix.skill['26'].rpss|num }}</td></tr>{% endfor %}</tbody></table>
+<table class="tbl"><thead><tr><th>Snow model vs baselines</th><th class="r">RPSS week 3</th><th class="r">RPSS week 4</th></tr></thead><tbody>
+{% for r in d.backtest.snow %}<tr><td>{{ r.model }}</td><td class="r">{{ r.rpss19|num }}</td><td class="r">{{ r.rpss26|num }}</td></tr>{% endfor %}</tbody></table>
+<table class="tbl"><thead><tr><th>Index</th><th class="r">RPSS week 3</th><th class="r">RPSS week 4</th></tr></thead><tbody>
+{% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td class="r">{{ ix.skill['19'].rpss|num }}</td><td class="r">{{ ix.skill['26'].rpss|num }}</td></tr>{% endfor %}</tbody></table>
 <p>Full tables, reliability diagrams and the windows-of-opportunity analysis: <code>docs/BACKTEST.md</code> in the repository.</p>
 <h2>Limits</h2>
 <ul>

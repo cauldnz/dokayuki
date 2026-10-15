@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-fetch = ["gcsfs>=2024.10", "cdsapi>=0.7.4", "ecmwf-datastores-client>=0.3", "cfgrib>=0.9.14", "eccodes>=2.38"]
+fetch = ["gcsfs>=2024.10", "cdsapi>=0.7.4", "ecmwf-datastores-client>=0.3", "cfgrib>=0.9.14", "eccodes>=2.38", "eccodeslib>=2.38"]
 maps = ["cartopy>=0.24"]
 dev = ["pytest>=8.3", "pytest-timeout>=2.3", "playwright>=1.48", "ruff>=0.7"]
 

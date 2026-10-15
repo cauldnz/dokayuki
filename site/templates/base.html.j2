@@ -7,7 +7,7 @@
 <meta name="description" content="{{ meta_description }}">
 <meta name="color-scheme" content="light dark">
 <link rel="icon" href="{{ rel }}assets/brand/hokkaidowilds-mark-270.png">
-<link rel="stylesheet" href="{{ rel }}assets/fonts/lato.css">
+<link rel="stylesheet" href="{{ rel }}assets/fonts/plex.css">
 <link rel="stylesheet" href="{{ rel }}design-tokens.css">
 <link rel="stylesheet" href="{{ rel }}static/style.css">
 <script>
@@ -27,7 +27,6 @@
       <button type="button" class="icon-btn" id="theme-btn" aria-label="Toggle dark mode" title="Toggle dark mode"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 2a8 8 0 1 0 0 16V2z" fill="currentColor"/><circle cx="10" cy="10" r="7.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
       {% if site.language.ja_toggle %}<button type="button" class="icon-btn" id="ja-btn" aria-pressed="false" aria-label="日本語の見出しを表示" title="日本語 / English">JA</button>{% endif %}
       <a class="nav-link" href="{{ rel }}method.html">Method</a>
-      <a class="nav-link hw" href="{{ site.hw_home_url }}">HokkaidoWilds</a>
     </nav>
   </div>
 </header>
@@ -36,12 +35,11 @@
 </main>
 <footer class="site-footer">
   <div class="wrap">
-    <p class="safety">Before you go, read the people whose job this is:
-      {% for l in site.safety.links %}<a href="{{ l.url }}">{{ l.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
+    <p class="safety">Avalanche and weather warnings: {% for l in site.safety.links %}<a href="{{ l.url }}">{{ l.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
     <p class="credits">Part of <a href="{{ site.hw_home_url }}">HokkaidoWilds.org</a>. By <a href="{{ site.author_url }}">{{ site.author_name }}</a>.{% if site.hw_post_url %} Background: <a href="{{ site.hw_post_url }}">the post</a>.{% endif %}
       Code MIT; outlooks CC BY-NC 4.0. <a href="{{ rel }}latest.json">latest.json</a> · <a href="{{ rel }}archive/">archive</a> · <a href="{{ rel }}embed.html">embed</a></p>
-    <ul class="attrib">{% for a in site.attribution %}<li>{{ a }}</li>{% endfor %}</ul>
-    <p class="disclaimer small muted">{{ site.wording.disclaimer }} {{ site.safety.line }} <span class="gag-note">{{ site.wording.gag_footnote }}</span></p>
+    <ul class="attrib small">{% for a in site.attribution %}<li>{{ a }}</li>{% endfor %}</ul>
+    <p class="disclaimer small">{{ site.wording.disclaimer }} {{ site.safety.line }} <span class="gag-note">{{ site.wording.gag_footnote }}</span></p>
   </div>
 </footer>
 <script src="{{ rel }}static/app.js"></script>

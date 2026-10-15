@@ -1,5 +1,5 @@
 # Site identity, links and brand assets (no hard-coding in templates).
-site_title: "Hokkaido Powder Outlook"
+site_title: "Hokkaido powder outlook"
 tagline: "weeks 3 & 4"
 site_url: "https://cauldnz.github.io/dokayuki/"
 author_name: "Chris Auld"
@@ -13,7 +13,7 @@ brand:
   hero_credit: ""
 wording:
   signal_name: "Book-ahead signal"          # alternative: "Beat-the-crowd signal"
-  signal_blurb: "Three to four weeks out is the last point where leave, flights and a room are still cheap. I cannot promise snow at that range. I can tilt the odds. The most this page will ever say is \"week 3 looks better than week 4\"; it will never say \"book Tuesday\"."
+  signal_blurb: "Three to four weeks out, leave and flights are still cheap. I cannot promise snow at that range. I can tilt the odds."
   disclaimer: "Personal research. Not advice."
   gag: "Japow. Alta pow. Albany pow.*"
   gag_footnote: "*Nobody has ever flown to Albany, NY for the powder. Probably."
@@ -35,7 +35,7 @@ attribution:
   - "ERA5: Copernicus Climate Change Service (C3S), ECMWF"
   - "AMeDAS: 出典：気象庁ホームページ"
   - "Arctic Oscillation index: NOAA Climate Prediction Center"
-  - "MJO RMM index: Australian Bureau of Meteorology"
+  - "MJO RMM index: Australian Bureau of Meteorology (CC BY 4.0)"
   - "Method: Probabilistic Bias Correction, Guan, Mouatadid et al. (2026), arXiv:2604.16238 (the Nature DOI in the brief did not resolve on 2026-10-14); code github.com/mouatadid/pbc (MIT)"
 licence:
   code: "MIT"

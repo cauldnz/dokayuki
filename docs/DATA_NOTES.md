@@ -104,7 +104,7 @@ Container: 4 vCPU, 15 GB RAM, Python 3.13.16, `uv` 0.11.
 | CDS ERA5 (daily statistics, pressure levels) | truth after 2023-01-10, snowfall at 0.25°, 10 hPa wind | https://cds.climate.copernicus.eu | C3S licence | ERA5T ~5 days |
 | CDS ERA5 | fallback truth | https://cds.climate.copernicus.eu | C3S licence | ~5 days |
 | NOAA CPC AO daily index | observed predictor | https://ftp.cpc.ncep.noaa.gov/cwlinks/norm.daily.ao.cdas.z1000.19500101_current.csv | US public domain | ~1 day |
-| BoM RMM MJO index | observed predictor | https://www.bom.gov.au/clim_data/IDCKGEM000/rmm.74toRealtime.txt (needs browser UA; to 2026-10-12 when probed); IRI mirror `SOURCES/.BoM/.MJO/.RMM/` | BoM: CC BY 4.0 (verify on page) | ~1–2 days |
+| BoM RMM MJO index | observed predictor | https://www.bom.gov.au/clim_data/IDCKGEM000/rmm.74toRealtime.txt (needs browser UA; to 2026-10-12 when probed); IRI mirror `SOURCES/.BoM/.MJO/.RMM/` | BoM: CC BY 4.0 (copyright page, verified 2026-10-15) | ~1–2 days |
 | JMA AMeDAS | station snow validation | https://www.data.jma.go.jp/risk/obsdl/ | JMA Public Data License; credit 出典：気象庁ホームページ | manual pull |
 
 ## ERA5 source decision (deviation from the brief)
@@ -156,8 +156,11 @@ month)**. JMA fixed sets keyed by system date: 2014-03-04 (hyears 1981–2010), 
 | Niseko AMeDAS station | **resolved** | ニセコ 16272 is precipitation-only (since 2010): no snowfall, no snow depth. Use Kutchan 16917 (closest) and Rankoshi 16915 |
 | S2S fields per origin: t850, z500, snowfall | **resolved** | ECMWF: temperature 850 hPa, geopotential_height 500 hPa, snow_fall_water_equivalent, u 10 hPa all present. JMA: temperature and geopotential_height on the same 10 pressure levels, **no snowfall** (cold-day precipitation used for its snow baseline). Both carry mean_sea_level_pressure, 2 m temperature, total precipitation, SST |
 | ECMWF reforecast cadence since CY49R1 | **resolved** | 186 reforecast init dates in 2025 = odd days of each month (also confirmed in the constraints: 01, 03, 05, …) |
-| JMA CPS4 25-member Tue/Wed runs in S2S? | **partly resolved** | ECDS lists daily JMA real-time runs at 00 and 12 UTC in 2024–2026; the member count per run is not visible in the form (check the first GRIB). No CPS4 reforecast set is listed |
+| JMA CPS4 25-member Tue/Wed runs in S2S? | **resolved** | First GRIB pulled 2026-10-15 (perturbed_forecast, 2026-01-07 00 UTC, a Wednesday): **4 perturbed members** (+ control = 5), centre `rjtd`. The S2S archive carries the daily 5-member slice, not a 25-member CPS4 run, so JMA is used as a lagged ensemble across issue days as in the reference code. No CPS4 reforecast set is listed |
 | Hokkaido/Japan avalanche bulletin publishers | **resolved** | 日本雪崩ネットワーク JAN (https://nadare.jp, bulletins https://data.nadare.jp/avalanche_informations: Niseko/Yotei/Yoichi and Daisetsu/Tokachi regions); ニセコ雪崩情報 Niseko Avalanche Information (http://niseko.nadare.info/, basis of the Niseko Rules); JMA なだれ注意報 advisories; aggregator https://hokkaidowilds.org/avalanche-bulletins-for-central-hokkaido |
 | ARCO-ERA5 anonymous read | **resolved** | works, but see the chunking verdict above |
 | BoM MJO reachability | **resolved** | current file: https://www.bom.gov.au/clim_data/IDCKGEM000/rmm.74toRealtime.txt (browser UA); the old /climate/mjo/graphics/ file stopped on 2024-02-24 |
-| Measurement lag for ERA5T | assumed | 5 days; confirm from CDS once keyed |
+| Measurement lag for ERA5T | **resolved** | CDS catalogue constraints for `reanalysis-era5-single-levels` listed data through 2026-10-09 when probed at 01:50 UTC on 2026-10-15 (6 days behind). Operational `measurement_lag_days: 10` keeps 4 days of margin |
+| JMA 10 hPa wind in S2S | **resolved** | Both origins list `10_hpa` with u, v, T, Z, w for all years, so `U10_60N` can be computed per member for JMA as well as ECMWF |
+| BoM RMM licence | **resolved** | bom.gov.au/other/copyright.shtml: "Licensed from the Commonwealth of Australia under a Creative Commons Attribution 4.0 International Licence" unless marked otherwise; the RMM text file carries no contrary notice. Attribution line on the site: "MJO RMM index: Australian Bureau of Meteorology (CC BY 4.0)" |
+| ECDS key and S2S licence | **resolved** | Key accepted 2026-10-15; a JMA msl request (one lead, domain box) ran accepted → running → successful in under a minute. The ECDS cost-estimate endpoint returned HTTP 500 repeatedly, so request counts are planned without it |

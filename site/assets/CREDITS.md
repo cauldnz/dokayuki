@@ -9,4 +9,4 @@
 Hero background until a photo is supplied: a CSS gradient (no third-party image).
 The @joekkaido badge artwork is **not** used.
 | `geo/ne_110m_coastline.geojson` | Natural Earth 1:110m coastline | https://github.com/nvkelso/natural-earth-vector | Public domain |
-| `fonts/lato-*.woff2` | Lato 400/700/900 (latin subset), self-hosted so no runtime request to Google | Łukasz Dziedzic via Google Fonts | SIL Open Font License 1.1 |
+| `fonts/ibm-plex-*.woff2` | IBM Plex Sans (variable) and IBM Plex Mono 300/400/500 (latin subset), self-hosted so no runtime request to Google | IBM via Google Fonts | SIL Open Font License 1.1 |

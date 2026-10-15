@@ -5,7 +5,7 @@ import json
 import math
 from pathlib import Path
 
-GRADE_COLOURS = {"Strong": "var(--accent)", "Moderate": "var(--snow-above)", "Weak": "var(--snow-near)", "No signal": "var(--snow-below)"}
+MONO = "IBM Plex Mono, Menlo, Consolas, monospace"
 
 
 def pct(p: float) -> int:
@@ -13,34 +13,43 @@ def pct(p: float) -> int:
     return int(5 * round(100 * p / 5))
 
 
-def tercile_bar(t: dict, width: int = 320, height: int = 28, label_id: str = "") -> str:
+def tercile_bar(t: dict, width: int = 320, height: int = 28, label_id: str = "", subject: bool = True) -> str:
+    """Three segments. The favoured tercile is the figure's one vermilion mark when `subject`;
+    otherwise everything stays ink and grey (no signal, or no skill)."""
     b, n, a = t["below"], t["near"], t["above"]
+    fav = max(("below", "near", "above"), key=lambda k: t[k]) if subject else None
     x = 0
     parts = []
-    for key, val, col in (("below", b, "var(--snow-below)"), ("near", n, "var(--snow-near)"), ("above", a, "var(--snow-above)")):
+    for key, val in (("below", b), ("near", n), ("above", a)):
         w = width * val
-        parts.append(f'<rect x="{x:.1f}" y="0" width="{w:.1f}" height="{height}" fill="{col}" rx="0"/>')
+        fill = "var(--shu)" if key == fav else "var(--paper-2)"
+        parts.append(f'<rect x="{x:.1f}" y="0" width="{w:.1f}" height="{height}" fill="{fill}"/>')
+        if x > 0:
+            parts.append(f'<line x1="{x:.1f}" y1="0" x2="{x:.1f}" y2="{height}" stroke="var(--paper)" stroke-width="1"/>')
         if val >= 0.12:
-            parts.append(f'<text x="{x + w / 2:.1f}" y="{height * 0.68:.1f}" text-anchor="middle" font-size="12" font-weight="700" fill="{"#fff" if key == "above" else "var(--ink-strong)"}">{pct(val)}%</text>')
+            ink = "var(--paper)" if key == fav else "var(--sumi)"
+            parts.append(f'<text x="{x + w / 2:.1f}" y="{height * 0.68:.1f}" text-anchor="middle" font-family="{MONO}" font-size="12" fill="{ink}">{pct(val)}%</text>')
         x += w
     return (f'<svg class="tercile" viewBox="0 0 {width} {height}" width="100%" height="{height}" role="img" '
             f'aria-labelledby="{label_id}" preserveAspectRatio="none">' + "".join(parts) + "</svg>")
 
 
-def quintile_bar(q: list[float], width: int = 200, height: int = 44, highlight_top: bool = True) -> str:
-    """Five bins; bar height = probability; the 20 % climatology line drawn across."""
+def quintile_bar(q: list[float], width: int = 200, height: int = 44, subject: bool = True) -> str:
+    """Five flat bars, radius 0, gaps at least half a bar; the 20 % climatology line dashed across.
+    The most likely bin is the one vermilion mark when `subject`."""
     n = len(q)
-    gap = 4
+    gap = 8
     bw = (width - gap * (n - 1)) / n
     parts = []
     maxp = max(0.4, max(q))
+    top = max(range(n), key=lambda i: q[i]) if subject else -1
     for i, p in enumerate(q):
         h = (height - 12) * p / maxp
-        col = f"var(--quint-{i + 1})"
-        parts.append(f'<rect x="{i * (bw + gap):.1f}" y="{height - 12 - h:.1f}" width="{bw:.1f}" height="{h:.1f}" fill="{col}" rx="2"/>')
-        parts.append(f'<text x="{i * (bw + gap) + bw / 2:.1f}" y="{height - 1}" text-anchor="middle" font-size="9" fill="var(--muted)">{pct(p)}</text>')
+        col = "var(--shu)" if i == top else "var(--sumi-3)"
+        parts.append(f'<rect x="{i * (bw + gap):.1f}" y="{height - 12 - h:.1f}" width="{bw:.1f}" height="{h:.1f}" fill="{col}"/>')
+        parts.append(f'<text x="{i * (bw + gap) + bw / 2:.1f}" y="{height - 1}" text-anchor="middle" font-family="{MONO}" font-size="9" fill="var(--sumi-2)">{pct(p)}</text>')
     yc = height - 12 - (height - 12) * 0.2 / maxp
-    parts.append(f'<line x1="0" y1="{yc:.1f}" x2="{width}" y2="{yc:.1f}" stroke="var(--muted)" stroke-dasharray="3 3" stroke-width="1"/>')
+    parts.append(f'<line x1="0" y1="{yc:.1f}" x2="{width}" y2="{yc:.1f}" stroke="var(--sumi-3)" stroke-dasharray="3 3" stroke-width="1"/>')
     return f'<svg class="quint" viewBox="0 0 {width} {height}" width="100%" height="{height}" aria-hidden="true" focusable="false">' + "".join(parts) + "</svg>"
 
 
@@ -52,36 +61,36 @@ def factor_bars(factors: list[dict], width: int = 300, row: int = 22) -> str:
     h = row * len(factors)
     cx = width * 0.55
     scale = (width * 0.42) / m
-    parts = [f'<line x1="{cx:.1f}" y1="0" x2="{cx:.1f}" y2="{h}" stroke="var(--border)"/>']
+    parts = [f'<line x1="{cx:.1f}" y1="0" x2="{cx:.1f}" y2="{h}" stroke="var(--sumi-3)"/>']
     for i, f in enumerate(factors):
         y = i * row + 4
         c = f["contribution"]
         w = abs(c) * scale
         x = cx if c >= 0 else cx - w
-        col = "var(--snow-above)" if c >= 0 else "var(--snow-below)"
-        parts.append(f'<text x="0" y="{y + 11}" font-size="11" fill="var(--ink)">{f["name"]}</text>')
-        parts.append(f'<rect x="{x:.1f}" y="{y}" width="{max(w, 1):.1f}" height="{row - 8}" fill="{col}" rx="2"/>')
+        col = "var(--sumi)" if c >= 0 else "var(--sumi-3)"
+        parts.append(f'<text x="0" y="{y + 11}" font-size="11" fill="var(--sumi-2)">{f["name"]}</text>')
+        parts.append(f'<rect x="{x:.1f}" y="{y}" width="{max(w, 1):.1f}" height="{row - 8}" fill="{col}"/>')
     return f'<svg class="factors" viewBox="0 0 {width} {h}" width="100%" height="{h}" aria-hidden="true" focusable="false">' + "".join(parts) + "</svg>"
 
 
 def mjo_wheel(phase: int, amp: float, rmm1: float | None = None, rmm2: float | None = None, size: int = 120) -> str:
     c = size / 2
     r = size * 0.36
-    parts = [f'<circle cx="{c}" cy="{c}" r="{r:.1f}" fill="none" stroke="var(--border)"/>',
-             f'<circle cx="{c}" cy="{c}" r="{r / 3:.1f}" fill="var(--bg-alt)" stroke="var(--border)"/>']
+    parts = [f'<circle cx="{c}" cy="{c}" r="{r:.1f}" fill="none" stroke="var(--rule)"/>',
+             f'<circle cx="{c}" cy="{c}" r="{r / 3:.1f}" fill="none" stroke="var(--rule)"/>']
     for k in range(8):
         a = math.radians(45 * k)
-        parts.append(f'<line x1="{c + r / 3 * math.cos(a):.1f}" y1="{c - r / 3 * math.sin(a):.1f}" x2="{c + r * math.cos(a):.1f}" y2="{c - r * math.sin(a):.1f}" stroke="var(--border)"/>')
+        parts.append(f'<line x1="{c + r / 3 * math.cos(a):.1f}" y1="{c - r / 3 * math.sin(a):.1f}" x2="{c + r * math.cos(a):.1f}" y2="{c - r * math.sin(a):.1f}" stroke="var(--rule)"/>')
     # phase numbering: WH04 phases run anticlockwise from the lower-left (phase 1 at ~225 deg)
     for k in range(1, 9):
         a = math.radians(202.5 + 45 * (k - 1))
-        parts.append(f'<text x="{c + r * 1.15 * math.cos(a):.1f}" y="{c - r * 1.15 * math.sin(a) + 3.5:.1f}" text-anchor="middle" font-size="9" fill="var(--muted)">{k}</text>')
+        parts.append(f'<text x="{c + r * 1.15 * math.cos(a):.1f}" y="{c - r * 1.15 * math.sin(a) + 3.5:.1f}" text-anchor="middle" font-family="{MONO}" font-size="9" fill="var(--sumi-2)">{k}</text>')
     if rmm1 is None or rmm2 is None:
         a = math.radians(202.5 + 45 * (phase - 1))
         rmm1, rmm2 = amp * math.cos(a), amp * math.sin(a)
     px, py = c + min(amp, 3) / 3 * r * (rmm1 / max(amp, 1e-6)), c - min(amp, 3) / 3 * r * (rmm2 / max(amp, 1e-6))
-    parts.append(f'<line x1="{c}" y1="{c}" x2="{px:.1f}" y2="{py:.1f}" stroke="var(--accent)" stroke-width="2"/>')
-    parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="4" fill="var(--accent)"/>')
+    parts.append(f'<line x1="{c}" y1="{c}" x2="{px:.1f}" y2="{py:.1f}" stroke="var(--shu)" stroke-width="2"/>')
+    parts.append(f'<circle cx="{px:.1f}" cy="{py:.1f}" r="4" fill="var(--shu)"/>')
     return f'<svg class="mjo" viewBox="0 0 {size} {size}" width="{size}" height="{size}" role="img" aria-label="MJO phase {phase}, amplitude {amp:.1f}">' + "".join(parts) + "</svg>"
 
 
@@ -95,21 +104,21 @@ def season_chart(weeks: list[dict], width: int = 640, height: int = 200) -> str:
     def X(i): return pad_l + (width - pad_l - pad_r) * i / max(n - 1, 1)
     def Y(v): return pad_t + (height - pad_t - pad_b) * (1 - v / ymax)
     band = " ".join(f"{X(i):.1f},{Y(w['clim_hi']):.1f}" for i, w in enumerate(weeks)) + " " + " ".join(f"{X(i):.1f},{Y(w['clim_lo']):.1f}" for i, w in reversed(list(enumerate(weeks))))
-    parts = [f'<polygon points="{band}" fill="var(--snow-near)" opacity=".35"/>']
+    parts = [f'<polygon points="{band}" fill="var(--paper-2)"/>']
     obs = [(X(i), Y(w["obs"])) for i, w in enumerate(weeks) if w.get("obs") is not None]
     if obs:
-        parts.append('<polyline points="' + " ".join(f"{x:.1f},{y:.1f}" for x, y in obs) + '" fill="none" stroke="var(--primary)" stroke-width="2.5"/>')
+        parts.append('<polyline points="' + " ".join(f"{x:.1f},{y:.1f}" for x, y in obs) + '" fill="none" stroke="var(--shu)" stroke-width="2"/>')
     for i, w in enumerate(weeks):
         for lead, mark in (("fc19", "▲"), ("fc26", "△")):
             f = w.get(lead)
             if f:
-                col = "var(--snow-above)" if f == "above" else ("var(--snow-below)" if f == "below" else "var(--muted)")
+                col = "var(--sumi)" if f == "above" else ("var(--sumi-3)" if f == "below" else "var(--sumi-2)")
                 parts.append(f'<text x="{X(i) + (0 if lead == "fc19" else 7):.1f}" y="{height - pad_b + 13}" text-anchor="middle" font-size="9" fill="{col}">{mark}</text>')
         if i % max(1, n // 6) == 0:
-            parts.append(f'<text x="{X(i):.1f}" y="{height - 6}" text-anchor="middle" font-size="10" fill="var(--muted)">{w["start"][5:]}</text>')
+            parts.append(f'<text x="{X(i):.1f}" y="{height - 6}" text-anchor="middle" font-family="{MONO}" font-size="10" fill="var(--sumi-2)">{w["start"][5:]}</text>')
     for v in (0, ymax / 2, ymax):
-        parts.append(f'<text x="{pad_l - 4}" y="{Y(v) + 4:.1f}" text-anchor="end" font-size="10" fill="var(--muted)">{v:.0f}</text>')
-        parts.append(f'<line x1="{pad_l}" y1="{Y(v):.1f}" x2="{width - pad_r}" y2="{Y(v):.1f}" stroke="var(--border)" stroke-width="1"/>')
+        parts.append(f'<text x="{pad_l - 4}" y="{Y(v) + 4:.1f}" text-anchor="end" font-family="{MONO}" font-size="10" fill="var(--sumi-2)">{v:.0f}</text>')
+        parts.append(f'<line x1="{pad_l}" y1="{Y(v):.1f}" x2="{width - pad_r}" y2="{Y(v):.1f}" stroke="var(--rule)" stroke-width="1"/>')
     return f'<svg class="season" viewBox="0 0 {width} {height}" width="100%" role="img" aria-labelledby="season-desc">' + "".join(parts) + "</svg>"
 
 
@@ -120,7 +129,7 @@ def _lonlat_to_xy(lon: float, lat: float, box: dict, width: int, height: int):
     return x, y
 
 
-MAP_QUINT = ["#e8e2d6", "#c9d6e3", "#93b4d2", "#4078c0", "#185078"]
+MAP_QUINT = ["#f0f0eb", "#cfcfc8", "#a3a39b", "#6c6c66", "#1a1a18"]
 
 
 def map_svg(grid: dict, coast: dict, boxes: dict[str, dict], domain: dict, title: str, width: int = 640,
@@ -135,7 +144,7 @@ def map_svg(grid: dict, coast: dict, boxes: dict[str, dict], domain: dict, title
         height = int(width * (lat1 - lat0) / (lon1 - lon0) * 1.35)  # mild N-S stretch for a plate carree look
     lats, lons = grid["lats"], grid["lons"]
     dlat = abs(lats[1] - lats[0]); dlon = abs(lons[1] - lons[0])
-    parts = [f'<rect x="0" y="0" width="{width}" height="{height}" fill="#f6f8fa"/>']
+    parts = [f'<rect x="0" y="0" width="{width}" height="{height}" fill="#fafaf7"/>']
     for i, la in enumerate(lats):
         j = 0
         while j < len(lons):  # run-length merge of identical cells along a row
@@ -162,25 +171,25 @@ def map_svg(grid: dict, coast: dict, boxes: dict[str, dict], domain: dict, title
                 if inside:
                     x, y = _lonlat_to_xy(lon360, lat, domain, width, height)
                     if prev is not None and abs(lon360 - prev) > 180:
-                        parts.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="#3a3a3a" stroke-width="1" opacity=".8"/>'); pts = []
+                        parts.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="#5a5a54" stroke-width="1"/>'); pts = []
                     pts.append(f"{x:.1f},{y:.1f}"); prev = lon360
                 else:
                     if len(pts) > 1:
-                        parts.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="#3a3a3a" stroke-width="1" opacity=".8"/>')
+                        parts.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="#5a5a54" stroke-width="1"/>')
                     pts = []; prev = None
             if len(pts) > 1:
-                parts.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="#3a3a3a" stroke-width="1" opacity=".8"/>')
+                parts.append(f'<polyline points="{" ".join(pts)}" fill="none" stroke="#5a5a54" stroke-width="1"/>')
     for key, bx in boxes.items():
         x, y = _lonlat_to_xy(bx["lon"][0], bx["lat"][1], domain, width, height)
         x2, y2 = _lonlat_to_xy(bx["lon"][1], bx["lat"][0], domain, width, height)
-        parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{x2 - x:.1f}" height="{y2 - y:.1f}" fill="none" stroke="#e01c1e" stroke-width="1.5" stroke-dasharray="4 3"/>')
-        parts.append(f'<text x="{x + 4:.1f}" y="{y + 12:.1f}" font-family="Lato,Arial,sans-serif" font-size="11" font-weight="700" fill="#e01c1e">{key}</text>')
+        parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{x2 - x:.1f}" height="{y2 - y:.1f}" fill="none" stroke="#8c8c85" stroke-width="1" stroke-dasharray="4 3"/>')
+        parts.append(f'<text x="{x + 4:.1f}" y="{y + 12:.1f}" font-family="IBM Plex Sans,Arial,sans-serif" font-size="11" fill="#5a5a54">{key}</text>')
     if hokkaido:
         x, y = _lonlat_to_xy(hokkaido["lon"][0], hokkaido["lat"][1], domain, width, height)
         x2, y2 = _lonlat_to_xy(hokkaido["lon"][1], hokkaido["lat"][0], domain, width, height)
-        parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{x2 - x:.1f}" height="{y2 - y:.1f}" fill="none" stroke="#0a0101" stroke-width="2"/>')
+        parts.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{x2 - x:.1f}" height="{y2 - y:.1f}" fill="none" stroke="#c23b22" stroke-width="1.5"/>')
     legend = "".join(f'<rect x="{width - 130 + i * 24}" y="{height - 22}" width="22" height="12" fill="{MAP_QUINT[i]}"/>' for i in range(5))
-    legend += f'<text x="{width - 130}" y="{height - 26}" font-family="Lato,Arial,sans-serif" font-size="10" fill="#3a3a3a">most likely quintile (low → high)</text>'
+    legend += f'<text x="{width - 130}" y="{height - 26}" font-family="IBM Plex Sans,Arial,sans-serif" font-size="10" fill="#5a5a54">most likely quintile (low → high)</text>'
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" height="{height}" role="img" aria-label="{title}">' +
             "".join(parts) + legend + "</svg>")
 

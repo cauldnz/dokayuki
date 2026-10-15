@@ -64,7 +64,7 @@ def main():
     a = p.parse_args(); logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     cfg, defs = RegionConfig.load(), load_indices()
     months = {int(m) for m in a.months.split(",")}
-    end = pd.Timestamp(a.end) if a.end else pd.Timestamp.utcnow().normalize() - pd.Timedelta(days=2)
+    end = pd.Timestamp(a.end) if a.end else pd.Timestamp.now("UTC").tz_localize(None).normalize() - pd.Timedelta(days=2)
     start = end - pd.Timedelta(days=10) if a.recent else pd.Timestamp(a.start)
     reqlog = RequestLog.load(ROOT / "state" / "requests.json")
     plan = []

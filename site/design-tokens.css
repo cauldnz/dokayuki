@@ -1,79 +1,30 @@
-/* Design tokens for the Hokkaido Powder Outlook, pulled from hokkaidowilds.org (2026-10-14).
-   Provenance of every value is in docs/DESIGN.md. */
-:root {
-  /* type: HokkaidoWilds loads Google Fonts "Lato" 400 (Astra body) with 700/900 for headings and
-     the custom display face "Jaapokki" for a few feature titles (not redistributable here: we
-     fall back to Lato 900 with tight tracking). Noto Sans JP for Japanese. */
-  --font-body: "Lato", "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Lato", "Helvetica Neue", Arial, sans-serif;
-  --font-ja: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
-  --fs-base: 1rem;            /* Astra: 15px/1rem, line-height 1.65 */
-  --lh-base: 1.65;
-
-  /* palette: HW site + logo */
-  --hw-blue: #427fc1;         /* HW link colour (Astra customiser) */
-  --hw-blue-deep: #063077;    /* HW form/section heading blue */
-  --hw-blue-logo: #185078;    /* logo dark blue */
-  --hw-blue-logo-mid: #2868a0;/* logo mid blue */
-  --hw-blue-logo-light: #4078c0; /* logo light blue */
-  --hw-red: #e01c1e;          /* HW CTA button / link hover red (logo red #e01818) */
-  --hw-red-dark: #b90001;     /* button hover */
-  --hw-green: #23a455;        /* Elementor kit custom green */
-  --hw-text: #3a3a3a;         /* Astra global text */
-  --hw-text-muted: #808285;   /* HW body grey */
-  --hw-border: #eaeaea;       /* Astra menu/border grey */
-  --hw-footer-rule: #7a7a7a;
-  /* difficulty rubric scale (route pages): A red, B salmon, C light green, D green */
-  --diff-a: #c4201f; --diff-b: #ff8f76; --diff-c: #6cdc88; --diff-d: #068e41;
-
-  /* semantic */
-  --bg: #ffffff;
-  --bg-alt: #f6f8fa;
-  --surface: #ffffff;
-  --ink: #3a3a3a;
-  --ink-strong: #0a0101;      /* HW header menu text */
-  --muted: #6b6f74;           /* darkened from #808285 for AA on white */
-  --primary: var(--hw-blue-logo);
-  --primary-strong: var(--hw-blue-deep);
-  --link: #2f6aa8;            /* HW #427fc1 darkened to pass AA on white (4.6:1) */
-  --accent: var(--hw-red);    /* reserved for big snow week / strong signal */
-  --accent-ink: #ffffff;
-  --secondary: var(--hw-blue-logo-light);
-  --ok: var(--hw-green);
-  --border: var(--hw-border);
-  --shadow: 0 1px 2px rgba(0,0,0,.06), 0 6px 18px rgba(10,1,1,.07);
-  --radius: 4px;              /* HW uses 2–6 px; cards 4 */
-  --radius-lg: 8px;
-  --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem;
-  --maxw: 1120px;
-
-  /* snow / anomaly scales: "more snow" direction is always the highlighted (blue) end */
-  --snow-below: #d9d4c7;      /* warm grey = less snow */
-  --snow-near: #a9c4dd;
-  --snow-above: var(--hw-blue-logo-mid);
-  --snow-big: var(--hw-red);
-  --temp-cold: #2f6aa8; --temp-neutral: #f2f2f2; --temp-warm: #c4201f;
-  --quint-1: #e8e2d6; --quint-2: #c9d6e3; --quint-3: #93b4d2; --quint-4: #4078c0; --quint-5: #185078;
+/* Design tokens: the author's house system ("Shu": paper, ink, one vermilion mark).
+   Provenance and the mapping from the HokkaidoWilds brand are in docs/DESIGN.md. */
+:root, [data-theme="light"] {
+  --paper: #fafaf7; --paper-2: #f0f0eb; --rule: #dcdcd5;
+  --sumi: #1a1a18; --sumi-2: #5a5a54; --sumi-3: #8c8c85;
+  --shu: #c23b22; --shu-soft: #f8e4dc;
+  --gain: #2e6b47; --loss: #a1232b; --ai: #33587a; --cha: #8a6a3c;
+}
+[data-theme="dark"] {
+  --paper: #121211; --paper-2: #1c1c1a; --rule: #33332f;
+  --sumi: #ebebe5; --sumi-2: #a3a39b; --sumi-3: #6c6c66;
+  --shu: #ef6f4a; --shu-soft: #3b1f17;
+  --gain: #6db488; --loss: #ec7480; --ai: #86a8c8; --cha: #c4a272;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0f1418; --bg-alt: #151b21; --surface: #1a2129;
-    --ink: #e6e9ec; --ink-strong: #ffffff; --muted: #a7b0b8;
-    --primary: #8fb8e6; --primary-strong: #bcd6f5; --link: #8fb8e6;
-    --accent: #ff6b6b; --accent-ink: #1a0000; --secondary: #6aa4e0; --ok: #4ccf7a;
-    --border: #2a333d; --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.45);
-    --snow-below: #4a4740; --snow-near: #3b5670; --snow-above: #6aa4e0; --snow-big: #ff6b6b;
-    --temp-cold: #8fb8e6; --temp-neutral: #2a333d; --temp-warm: #ff7b7b;
-    --quint-1: #3a3630; --quint-2: #334452; --quint-3: #3f6a94; --quint-4: #5f98d6; --quint-5: #a8cdf0;
+    --paper: #121211; --paper-2: #1c1c1a; --rule: #33332f;
+    --sumi: #ebebe5; --sumi-2: #a3a39b; --sumi-3: #6c6c66;
+    --shu: #ef6f4a; --shu-soft: #3b1f17;
+    --gain: #6db488; --loss: #ec7480; --ai: #86a8c8; --cha: #c4a272;
   }
 }
-:root[data-theme="dark"] {
-  --bg: #0f1418; --bg-alt: #151b21; --surface: #1a2129;
-  --ink: #e6e9ec; --ink-strong: #ffffff; --muted: #a7b0b8;
-  --primary: #8fb8e6; --primary-strong: #bcd6f5; --link: #8fb8e6;
-  --accent: #ff6b6b; --accent-ink: #1a0000; --secondary: #6aa4e0; --ok: #4ccf7a;
-  --border: #2a333d; --shadow: 0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.45);
-  --snow-below: #4a4740; --snow-near: #3b5670; --snow-above: #6aa4e0; --snow-big: #ff6b6b;
-  --temp-cold: #8fb8e6; --temp-neutral: #2a333d; --temp-warm: #ff7b7b;
-  --quint-1: #3a3630; --quint-2: #334452; --quint-3: #3f6a94; --quint-4: #5f98d6; --quint-5: #a8cdf0;
+:root {
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px; --space-8: 32px; --space-12: 48px; --space-24: 96px;
+  --stroke-hair: 1px; --stroke-data: 1.5px; --stroke-subject: 2px;
+  --font-sans: "IBM Plex Sans", "IBM Plex Sans JP", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --font-ja: "IBM Plex Sans JP", "Hiragino Sans", "Yu Gothic", "Noto Sans JP", sans-serif;
+  --maxw: 960px; --measure: 68ch;
 }

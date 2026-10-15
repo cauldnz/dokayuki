@@ -100,8 +100,8 @@ def make_env() -> Environment:
     hok = region["masks"]["hokkaido_land"]
     env.globals.update(
         pct=charts.pct,
-        tercile_bar=lambda t, width=320, height=28, label_id="": Markup(charts.tercile_bar(t, width, height, label_id)),
-        quintile_bar=lambda q: Markup(charts.quintile_bar(q)),
+        tercile_bar=lambda t, width=320, height=28, label_id="", subject=True: Markup(charts.tercile_bar(t, width, height, label_id, subject=bool(subject))),
+        quintile_bar=lambda q, subject=True: Markup(charts.quintile_bar(q, subject=bool(subject))),
         factor_bars=lambda f: Markup(charts.factor_bars(f)),
         mjo_wheel=lambda ph, amp, r1=None, r2=None, size=120: Markup(charts.mjo_wheel(ph, amp, r1, r2, size)),
         season_chart=lambda s: Markup(charts.season_chart(s)),

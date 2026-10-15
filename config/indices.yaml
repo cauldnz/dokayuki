@@ -138,8 +138,8 @@ stages:
   UBI: 1
   AO: 1
 stage_names:
-  1: {name: Trigger, normie: "Signs up in the Arctic that a cold outbreak is on the way", nerd: "Downward coupling of a weak or displaced polar vortex, Ural blocking and the AO raise the odds of cold-air outbreaks into East Asia weeks later"}
-  2: {name: Outbreak, normie: "Freezing air pouring off Siberia", nerd: "East Asian winter monsoon surge: the Siberian High to Aleutian Low pressure gradient drives cold northwesterly flow over the Sea of Japan"}
-  3: {name: Steering, normie: "Wind pointing straight at Hokkaido", nerd: "Trough position and the low-level wind direction set the fetch and where the snow bands make landfall"}
-  4: {name: Fuel, normie: "Warm sea + freezing air = snow factory", nerd: "Sea-effect instability: convective bands are favoured when SST minus T850 exceeds about 13 C, roughly the dry-adiabatic lapse rate over 1.5 km"}
-  5: {name: Delivery, normie: "Mountains wring it out", nerd: "Orographic enhancement over Hokkaido's terrain and the JPCZ convergence band; static at 1.5 degrees, explained but not forecast"}
+  1: {name: Trigger, normie: "Arctic signs of a cold outbreak to come", nerd: "Downward coupling of a weak or displaced polar vortex, Ural blocking and the AO raise the odds of cold-air outbreaks into East Asia weeks later"}
+  2: {name: Outbreak, normie: "Cold air off Siberia", nerd: "East Asian winter monsoon surge: the Siberian High to Aleutian Low pressure gradient drives cold northwesterly flow over the Sea of Japan"}
+  3: {name: Steering, normie: "Northwesterly flow onto Hokkaido", nerd: "Trough position and the low-level wind direction set the fetch and where the snow bands make landfall"}
+  4: {name: Fuel, normie: "Warm sea under cold air", nerd: "Sea-effect instability: convective bands are favoured when SST minus T850 exceeds about 13 C, roughly the dry-adiabatic lapse rate over 1.5 km"}
+  5: {name: Delivery, normie: "Mountains and the convergence zone", nerd: "Orographic enhancement over Hokkaido's terrain and the JPCZ convergence band; static at 1.5 degrees, explained but not forecast"}
