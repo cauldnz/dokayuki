@@ -71,7 +71,8 @@ class State:
         p = self.members_path(origin, lead, kind)
         p.parent.mkdir(parents=True, exist_ok=True)
         if p.exists():
-            old = xr.open_dataarray(p).load()
+            with xr.open_dataarray(p) as f:
+                old = f.load()
             da = xr.concat([old, da], dim="issue")
             da = da.isel(issue=~pd.Index(da["issue"].values).duplicated(keep="last")).sortby("issue")
         da.to_netcdf(p)
