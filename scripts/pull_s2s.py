@@ -62,6 +62,29 @@ def weekly_fields(ds: xr.Dataset, lead: int) -> xr.Dataset:
     return xr.Dataset(out)
 
 
+def _weekly_parts(parts: dict[str, Path], prefix: str, lead_days) -> dict[int, dict[str, xr.DataArray]]:
+    """Open the GRIBs whose part name (after the forecast-type prefix) starts with ``prefix``, reduce
+    each variable to its weekly value per lead at once (float32, in memory), and join control and
+    perturbed members on ``number``. Daily fields are never held for more than one variable, which
+    keeps a 220 member-year reforecast month under a gigabyte instead of ten."""
+    weekly: dict[int, dict[str, list[xr.DataArray]]] = {lead: {} for lead in lead_days}
+    for name, path in parts.items():
+        _ft, _, rest = name.partition("_")
+        if not rest.startswith(prefix):
+            continue
+        ds = open_grib_daily(path)
+        for v in ds.data_vars:
+            how = "sum" if v in ("tp", "sf") else "mean"
+            for lead in lead_days:
+                wk = weekly_from_member_steps(ds[v], lead, how, step_dim="step_day").astype("float32").load()
+                weekly[lead].setdefault(v, []).append(wk)
+        ds.close()
+    out = {}
+    for lead in lead_days:
+        out[lead] = {v: (xr.concat(arrs, dim="number").sortby("number") if len(arrs) > 1 else arrs[0]) for v, arrs in weekly[lead].items()}
+    return out
+
+
 def to_members(idx: xr.DataArray, req: dict, reforecast: bool) -> xr.DataArray:
     """(number, time, target) -> forecasts (issue, member, target); reforecasts (issue, hyear, member, target)
     where ``issue`` is the model-version date (request year, hindcast month-day) and ``hyear`` the hindcast year."""
@@ -75,35 +98,18 @@ def to_members(idx: xr.DataArray, req: dict, reforecast: bool) -> xr.DataArray:
     return idx.transpose("issue", "hyear", "member", "target")
 
 
-def _open_parts(parts: dict[str, Path], prefix: str) -> xr.Dataset | None:
-    """Open the GRIBs whose part name starts with ``prefix`` (any forecast type) and concatenate
-    control (number 0) and perturbed (1..N) members on ``number``."""
-    by_suffix: dict[str, list[xr.Dataset]] = {}
-    for name, path in parts.items():
-        ft, _, rest = name.partition("_")
-        if rest.startswith(prefix):
-            by_suffix.setdefault(rest, []).append(open_grib_daily(path))
-    if not by_suffix:
-        return None
-    merged = [xr.concat(dss, dim="number").sortby("number") if len(dss) > 1 else dss[0] for dss in by_suffix.values()]
-    return xr.merge(merged)
-
-
 def decode(parts: dict[str, Path], defs, lead_days=(19, 26)) -> dict[int, xr.DataArray]:
     """{part: grib path} for one (origin, month), both forecast types -> {lead: DataArray(number, time, target)}."""
+    dom = _weekly_parts(parts, "dom", lead_days)
+    hemi = {k: _weekly_parts(parts, k, lead_days) for k in ("ao", "ural", "u10")}
     out = {}
-    ds_dom = _open_parts(parts, "dom")
-    hemi = {k: _open_parts(parts, k) for k in ("ao", "ural", "u10")}
     for lead in lead_days:
         pieces = []
-        if ds_dom is not None:
-            wk = weekly_fields(ds_dom, lead)
-            pieces.append(all_indices({k: v for k, v in defs.items() if k not in STAGE1}, {v: wk[v] for v in wk.data_vars}, skip_missing=True))
+        if dom[lead]:
+            pieces.append(all_indices({k: v for k, v in defs.items() if k not in STAGE1}, dom[lead], skip_missing=True))
         hf = {}
-        for k, ds in hemi.items():
-            if ds is not None:
-                wk = weekly_fields(ds, lead)
-                hf.update({v: wk[v] for v in wk.data_vars})
+        for k in hemi:
+            hf.update(hemi[k][lead])
         if hf:
             pieces.append(all_indices({k: v for k, v in defs.items() if k in STAGE1}, hf, skip_missing=True))
         out[lead] = xr.concat(pieces, dim="target")
