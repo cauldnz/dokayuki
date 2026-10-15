@@ -16,7 +16,7 @@ import pandas as pd
 import requests
 import xarray as xr
 from dokayuki.config import RegionConfig, load_indices
-from dokayuki.fetch.s2s import RequestLog, build_request, ecds_client, fetch, hemi_requests, open_grib_daily
+from dokayuki.fetch.s2s import VARIABLES, RequestLog, build_request, ecds_client, fetch, hemi_requests, open_grib_daily
 from dokayuki.indices import all_indices
 from dokayuki.state import State
 from dokayuki.weekly import weekly_from_member_steps
@@ -42,6 +42,14 @@ def init_dates(collection: str, origin: str) -> pd.DatetimeIndex:
                     except ValueError:
                         pass
     return pd.DatetimeIndex(sorted(dates))
+
+
+KIND_OF = {v[1]: v[3] for v in VARIABLES.values()}
+
+
+def part_name(req: dict) -> str:
+    lev = "".join(l.split("_")[0] for l in req.get("level_value", []))
+    return f"{req['level_type'][:4]}{lev}_{KIND_OF.get(req['variable'][0], 'instant')[:3]}"
 
 
 def weekly_fields(ds: xr.Dataset, lead: int) -> xr.Dataset:
@@ -112,8 +120,7 @@ def main():
                 for ft in ("control_forecast", "perturbed_forecast"):
                     parts = []
                     for req in build_request(origin, init, FIELDS_DOMAIN, cfg.domain, ft, reforecast=is_rf, hyears=hy, days=days):
-                        kind = "acc" if "_" in req["leadtime_hour"][0] else "ins"
-                        parts.append((f"dom_{req['level_type'][:4]}_{kind}", req))
+                        parts.append((f"dom_{part_name(req)}", req))
                     parts += hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)
                     tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}_{ft[:4]}"
                     jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
@@ -140,7 +147,11 @@ def main():
             continue
         size_mb = sum(p.stat().st_size for p in got.values()) / 1e6
         t1 = time.time()
-        dec = decode(got, defs)
+        try:
+            dec = decode(got, defs)
+        except Exception as e:  # noqa: BLE001
+            log.exception("%s: decode failed (%s); GRIB kept for a rerun", tag, e)
+            continue
         origin = parts[0][1]["origin"]
         for lead, idx in dec.items():
             da = to_members(idx, parts[0][1], is_rf)

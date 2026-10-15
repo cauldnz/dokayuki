@@ -31,12 +31,13 @@ from ..config import Box
 log = logging.getLogger(__name__)
 
 VARIABLES = {
-    # short -> (level_type, variable, level_value, kind)   kind: "instant" | "accum"
+    # short -> (level_type, variable, level_value, kind)
+    # kind: "instant" (value at an hour) | "accum" (total from the start) | "daily" (24-h mean, "a_b" ranges)
     "msl":  ("single_level", "mean_sea_level_pressure", None, "instant"),
-    "t2m":  ("single_level", "2_m_temperature", None, "instant"),
+    "t2m":  ("single_level", "2_m_temperature", None, "daily"),
     "tp":   ("single_level", "total_precipitation", None, "accum"),
     "sf":   ("single_level", "snow_fall_water_equivalent", None, "accum"),
-    "sst":  ("single_level", "sea_surface_temperature", None, "instant"),
+    "sst":  ("single_level", "sea_surface_temperature", None, "daily"),
     "t850": ("pressure", "temperature", "850_hpa", "instant"),
     "z500": ("pressure", "geopotential_height", "500_hpa", "instant"),
     "u10hpa": ("pressure", "u_component_of_wind", "10_hpa", "instant"),
@@ -54,14 +55,15 @@ LEAD_DAYS = (18, 33)   # covers week-3 (days 19-25) and week-4 (26-32) for leads
 def leadtime_hours(kind: str, first_day: int = LEAD_DAYS[0], last_day: int = LEAD_DAYS[1]) -> list[str]:
     """Hour strings for daily values of forecast days first_day..last_day (day d = init + d-1).
 
-    Instantaneous fields are taken at 00 UTC of each day (hour 24*(d-1)); accumulated fields as
-    the 24-h window "a_b" ending at 00 UTC of the next day.
+    Instantaneous fields are taken at 00 UTC of each day (hour 24*(d-1)). Accumulated fields on
+    ECDS are totals from the start of the forecast at plain hours, so the daily amount for day d
+    is acc(24*d) - acc(24*(d-1)): request 24*(first_day-1) .. 24*last_day and difference later.
     """
-    out = []
-    for d in range(first_day, last_day + 1):
-        h0 = 24 * (d - 1)
-        out.append(f"{h0}_{h0 + 24}" if kind == "accum" else f"{h0}")
-    return out
+    if kind == "accum":
+        return [f"{24 * d}" for d in range(first_day - 1, last_day + 1)]
+    if kind == "daily":
+        return [f"{24 * (d - 1)}_{24 * d}" for d in range(first_day, last_day + 1)]
+    return [f"{24 * (d - 1)}" for d in range(first_day, last_day + 1)]
 
 
 def _area(domain: Box) -> list[float]:
@@ -77,11 +79,11 @@ def build_request(origin: str, init: pd.Timestamp, fields: list[str], domain: Bo
     axis). For reforecasts ``hday`` mirrors ``day`` and ``hyear`` lists the hindcast years."""
     fields = [f for f in fields if f in AVAILABLE[origin]]
     days = days or [init.day]
-    by_type: dict[str, list[str]] = {}
+    by_type: dict[tuple, list[str]] = {}
     for f in fields:
-        by_type.setdefault(VARIABLES[f][0], []).append(f)
+        by_type.setdefault((VARIABLES[f][0], VARIABLES[f][2]), []).append(f)
     reqs = []
-    for ltype, fs in by_type.items():
+    for (ltype, _lev), fs in by_type.items():
         kinds = {VARIABLES[f][3] for f in fs}
         for kind in sorted(kinds):
             sub = [f for f in fs if VARIABLES[f][3] == kind]
@@ -185,7 +187,11 @@ def fetch(collection: str, req: dict, target: Path, reqlog: RequestLog, client=N
             remote.download(str(target))
             return target
         if status in ("failed", "rejected", "dismissed"):
-            log.error("request %s %s: %s", remote.request_id, status, getattr(remote, "error", ""))
+            try:
+                detail = remote.json.get("metadata", {}).get("log") or remote.json.get("metadata", {}).get("request", {}).get("ids")
+            except Exception:  # noqa: BLE001
+                detail = ""
+            log.error("request %s %s: %s", remote.request_id, status, detail)
             reqlog.entries.pop(key, None)
             reqlog.save()
             return None
@@ -207,7 +213,29 @@ def open_grib_daily(path: Path, kind_by_short: dict[str, str] | None = None) -> 
     out = {}
     for ds in dss:
         for v in ds.data_vars:
-            da = ds[v]
+            # split pressure-level variables into our short names (t850, z500, u850, v850, u10hpa)
+            if "isobaricInhPa" in ds[v].dims:
+                for lev in ds["isobaricInhPa"].values:
+                    out.update(_daily(ds[v].sel(isobaricInhPa=lev, drop=True), _short(v, float(lev))))
+                continue
+            if "isobaricInhPa" in ds[v].coords:
+                out.update(_daily(ds[v].drop_vars("isobaricInhPa"), _short(v, float(ds["isobaricInhPa"].values))))
+                continue
+            out.update(_daily(ds[v], v))
+    return xr.Dataset(out)
+
+
+GRIB_SHORT = {"t": "t", "gh": "z", "u": "u", "v": "v", "z": "z"}
+
+
+def _short(v: str, level: float) -> str:
+    base = GRIB_SHORT.get(v, v)
+    return f"{base}10hpa" if level == 10 else f"{base}{int(level)}"
+
+
+def _daily(da: xr.DataArray, name: str) -> dict:
+    if True:
+        if True:
             if "number" not in da.dims:
                 da = da.expand_dims(number=[int(da.coords.get("number", 0))])
             if "time" not in da.dims:
@@ -218,7 +246,10 @@ def open_grib_daily(path: Path, kind_by_short: dict[str, str] | None = None) -> 
             attrs = da.attrs
             step_type = attrs.get("GRIB_stepType", "instant")
             da = da.transpose("number", "time", "step", ...)
-            if step_type == "accum":
+            if step_type in ("avg", "mean") or (step_type != "accum" and hours.size and hours[0] % 24 == 0 and attrs.get("GRIB_stepRange", "").find("-") > 0):
+                day = (hours // 24).astype(int)
+                da2 = da.rename({"step": "step_day"}).assign_coords(step_day=day)
+            elif step_type == "accum":
                 # cumulative from init -> daily increments; label by the day ending at that hour
                 vals = da.values
                 inc = np.diff(vals, axis=2, prepend=np.zeros_like(vals[:, :, :1]))
@@ -228,5 +259,4 @@ def open_grib_daily(path: Path, kind_by_short: dict[str, str] | None = None) -> 
             else:
                 day = (hours // 24 + 1).astype(int)
                 da2 = da.rename({"step": "step_day"}).assign_coords(step_day=day)
-            out[v] = da2.drop_vars([c for c in da2.coords if c not in da2.dims], errors="ignore")
-    return xr.Dataset(out)
+            return {name: da2.drop_vars([c for c in da2.coords if c not in da2.dims], errors="ignore")}
