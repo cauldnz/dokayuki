@@ -69,10 +69,14 @@ def _area(domain: Box) -> list[float]:
 
 
 def build_request(origin: str, init: pd.Timestamp, fields: list[str], domain: Box,
-                  forecast_type: str, reforecast: bool = False, hyears: list[int] | None = None,
-                  time: str = "00:00") -> list[dict]:
-    """One request per level_type (ECDS forms require a single level_type per request)."""
+                  forecast_type: str | list[str], reforecast: bool = False, hyears: list[int] | None = None,
+                  time: str = "00:00", days: list[int] | None = None, area: list[float] | None = None,
+                  grid: list[str] | None = None) -> list[dict]:
+    """One request per (level_type, kind). ECDS forms take one level_type per request; ``days``
+    puts every init day of ``init``'s month into one request (the GRIB then carries a ``time``
+    axis). For reforecasts ``hday`` mirrors ``day`` and ``hyear`` lists the hindcast years."""
     fields = [f for f in fields if f in AVAILABLE[origin]]
+    days = days or [init.day]
     by_type: dict[str, list[str]] = {}
     for f in fields:
         by_type.setdefault(VARIABLES[f][0], []).append(f)
@@ -83,23 +87,43 @@ def build_request(origin: str, init: pd.Timestamp, fields: list[str], domain: Bo
             sub = [f for f in fs if VARIABLES[f][3] == kind]
             req = {
                 "origin": origin,
-                "year": f"{init.year}", "month": f"{init.month:02d}", "day": f"{init.day:02d}",
+                "year": f"{init.year}", "month": f"{init.month:02d}", "day": [f"{d:02d}" for d in days],
                 "time": time,
                 "level_type": ltype,
-                "variable": [VARIABLES[f][1] for f in sub],
+                "variable": list(dict.fromkeys(VARIABLES[f][1] for f in sub)),
                 "forecast_type": forecast_type,
                 "leadtime_hour": leadtime_hours(kind),
-                "area": _area(domain),
+                "area": area or _area(domain),
                 "data_format": "grib",
             }
+            if grid:
+                req["grid"] = grid
             if ltype == "pressure":
                 req["level_value"] = sorted({VARIABLES[f][2] for f in sub})
             if reforecast:
                 req["hyear"] = [str(y) for y in (hyears or [])]
                 req["hmonth"] = [f"{init.month:02d}"]
-                req["hday"] = [f"{init.day:02d}"]
+                req["hday"] = [f"{d:02d}" for d in days]
             reqs.append(req)
     return reqs
+
+
+# Stage-1 (trigger) targets need fields outside the domain box: a coarse hemispheric MSLP for
+# the AO projection, the Ural box for UBI and the 60N band for U10_60N. Each is a small request.
+HEMI_PARTS = {
+    "ao":   (["msl"],    [90.0, 0.0, 20.0, 360.0], ["3", "3"]),
+    "ural": (["z500"],   [70.0, 40.0, 45.0, 80.0], None),
+    "u10":  (["u10hpa"], [61.5, 0.0, 58.5, 360.0], None),
+}
+
+
+def hemi_requests(origin: str, init: pd.Timestamp, forecast_type, reforecast: bool = False,
+                  hyears: list[int] | None = None, days: list[int] | None = None) -> list[tuple[str, dict]]:
+    out = []
+    for part, (fields, area, grid) in HEMI_PARTS.items():
+        for req in build_request(origin, init, fields, None, forecast_type, reforecast, hyears, days=days, area=area, grid=grid):
+            out.append((part, req))
+    return out
 
 
 @dataclass
@@ -172,7 +196,7 @@ def fetch(collection: str, req: dict, target: Path, reqlog: RequestLog, client=N
 
 # ----------------------------------------------------------------------------- GRIB -> daily member fields
 def open_grib_daily(path: Path, kind_by_short: dict[str, str] | None = None) -> xr.Dataset:
-    """Open an S2S GRIB with cfgrib and return daily fields on (number, step_day, lat, lon).
+    """Open an S2S GRIB with cfgrib and return daily fields on (number, time, step_day, lat, lon).
 
     Instantaneous fields: value at 00 UTC of day d is labelled step_day = d (d = hours/24 + 1).
     Accumulated fields (tp, sf): the 24-h accumulation ending at hour h is labelled by the day
@@ -186,18 +210,23 @@ def open_grib_daily(path: Path, kind_by_short: dict[str, str] | None = None) -> 
             da = ds[v]
             if "number" not in da.dims:
                 da = da.expand_dims(number=[int(da.coords.get("number", 0))])
+            if "time" not in da.dims:
+                da = da.expand_dims(time=[da.coords["time"].values])
+            if "step" not in da.dims:
+                da = da.expand_dims(step=[da.coords["step"].values])
             hours = (da["step"].values / np.timedelta64(1, "h")).astype(int)
             attrs = da.attrs
             step_type = attrs.get("GRIB_stepType", "instant")
+            da = da.transpose("number", "time", "step", ...)
             if step_type == "accum":
                 # cumulative from init -> daily increments; label by the day ending at that hour
-                vals = da.transpose("number", "step", ...).values
-                inc = np.diff(vals, axis=1, prepend=np.zeros_like(vals[:, :1]))
+                vals = da.values
+                inc = np.diff(vals, axis=2, prepend=np.zeros_like(vals[:, :, :1]))
                 day = (hours // 24).astype(int)
-                da2 = xr.DataArray(inc, dims=("number", "step_day") + tuple(da.dims[2:]),
-                                   coords={"number": da["number"], "step_day": day, **{d: da[d] for d in da.dims[2:]}})
+                da2 = xr.DataArray(inc, dims=("number", "time", "step_day") + tuple(da.dims[3:]),
+                                   coords={"number": da["number"], "time": da["time"], "step_day": day, **{d: da[d] for d in da.dims[3:]}})
             else:
                 day = (hours // 24 + 1).astype(int)
-                da2 = da.transpose("number", "step", ...).rename({"step": "step_day"}).assign_coords(step_day=day)
-            out[v] = da2
+                da2 = da.rename({"step": "step_day"}).assign_coords(step_day=day)
+            out[v] = da2.drop_vars([c for c in da2.coords if c not in da2.dims], errors="ignore")
     return xr.Dataset(out)

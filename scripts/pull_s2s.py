@@ -1,9 +1,10 @@
-"""S2S members from ECDS: ECMWF and JMA, forecasts and reforecasts, domain box, days 18-33, needed
-variables; resumable (request ids in state/requests.json); GRIB decoded to weekly per-member index
-values and the gridded weekly means, appended to state/members/.
+"""S2S members from ECDS: ECMWF and JMA, forecasts and reforecasts, one request per month and
+level type (ECDS accepts a list of init days; the GRIB then carries a ``time`` axis), days 18-33,
+the domain box plus three small hemispheric parts for the stage-1 targets. Resumable (request ids
+in state/requests.json). GRIB is decoded to weekly per-member index values appended to
+state/members/; the GRIB files stay under state/grib/ unless --delete-grib.
 
 Usage: pull_s2s.py --origins ecmwf,jma [--start 2015-01-01] [--end ...] [--recent] [--budget-s N] [--dry-run]
-The ECDS costing endpoint is called before each submission; the total is printed in --dry-run.
 """
 import argparse
 import logging
@@ -15,13 +16,14 @@ import pandas as pd
 import requests
 import xarray as xr
 from dokayuki.config import RegionConfig, load_indices
-from dokayuki.fetch.s2s import RequestLog, build_request, ecds_client, fetch, open_grib_daily
+from dokayuki.fetch.s2s import RequestLog, build_request, ecds_client, fetch, hemi_requests, open_grib_daily
 from dokayuki.indices import all_indices
 from dokayuki.state import State
 from dokayuki.weekly import weekly_from_member_steps
 
 ROOT = Path(__file__).resolve().parents[1]; STATE = State(ROOT / "state"); RAW = ROOT / "state" / "grib"
-FIELDS = ["msl", "t2m", "tp", "sf", "sst", "t850", "z500", "u850", "v850", "u10hpa"]
+FIELDS_DOMAIN = ["msl", "t2m", "tp", "sf", "sst", "t850", "z500", "u850", "v850"]
+STAGE1 = {"U10_60N", "UBI", "AO"}
 CONSTRAINTS = "https://ecds.ecmwf.int/api/catalogue/v1/collections/{c}/constraints.json"
 log = logging.getLogger("s2s")
 
@@ -42,18 +44,45 @@ def init_dates(collection: str, origin: str) -> pd.DatetimeIndex:
     return pd.DatetimeIndex(sorted(dates))
 
 
-def decode(path: Path, cfg, defs, lead_days=(19, 26)) -> dict:
-    """GRIB -> {lead: {"grid": Dataset(member, lat, lon), "idx": DataArray(member, target)}}"""
-    ds = open_grib_daily(path)
+def weekly_fields(ds: xr.Dataset, lead: int) -> xr.Dataset:
     out = {}
+    for v in ds.data_vars:
+        how = "sum" if v in ("tp", "sf") else "mean"
+        out[v] = weekly_from_member_steps(ds[v], lead, how, step_dim="step_day")
+    return xr.Dataset(out)
+
+
+def to_members(idx: xr.DataArray, req: dict, reforecast: bool) -> xr.DataArray:
+    """(number, time, target) -> forecasts (issue, member, target); reforecasts (issue, hyear, member, target)
+    where ``issue`` is the model-version date (request year, hindcast month-day) and ``hyear`` the hindcast year."""
+    idx = idx.rename({"number": "member"})
+    t = pd.DatetimeIndex(idx["time"].values)
+    if not reforecast:
+        return idx.rename({"time": "issue"}).transpose("issue", "member", "target")
+    issue = pd.to_datetime(pd.DataFrame({"year": int(req["year"]), "month": t.month, "day": t.day}))
+    idx = idx.assign_coords(issue=("time", issue.values), hyear=("time", t.year.values))
+    idx = idx.set_index(time=["issue", "hyear"]).unstack("time")
+    return idx.transpose("issue", "hyear", "member", "target")
+
+
+def decode(parts: dict[str, Path], defs, lead_days=(19, 26)) -> dict[int, xr.DataArray]:
+    """{part: grib path} for one (origin, month, type) -> {lead: DataArray(number, time, target)}."""
+    out = {}
+    dom = [open_grib_daily(p) for k, p in parts.items() if k.startswith("dom")]
+    hemi = {k: open_grib_daily(p) for k, p in parts.items() if not k.startswith("dom")}
+    ds_dom = xr.merge(dom) if dom else None
     for lead in lead_days:
-        weekly = {}
-        for v in ds.data_vars:
-            how = "sum" if v in ("tp", "sf") else "mean"
-            weekly[v] = weekly_from_member_steps(ds[v], lead, how)
-        wk = xr.Dataset(weekly)
-        idx = all_indices(defs, {v: wk[v] for v in wk.data_vars}, skip_missing=True)
-        out[lead] = {"grid": wk, "idx": idx}
+        pieces = []
+        if ds_dom is not None:
+            wk = weekly_fields(ds_dom, lead)
+            pieces.append(all_indices({k: v for k, v in defs.items() if k not in STAGE1}, {v: wk[v] for v in wk.data_vars}, skip_missing=True))
+        hf = {}
+        for k, ds in hemi.items():
+            wk = weekly_fields(ds, lead)
+            hf.update({v: wk[v] for v in wk.data_vars})
+        if hf:
+            pieces.append(all_indices({k: v for k, v in defs.items() if k in STAGE1}, hf, skip_missing=True))
+        out[lead] = xr.concat(pieces, dim="target")
     return out
 
 
@@ -61,45 +90,65 @@ def main():
     p = argparse.ArgumentParser(); p.add_argument("--origins", default="ecmwf,jma"); p.add_argument("--start", default="2015-01-01")
     p.add_argument("--end", default=None); p.add_argument("--recent", action="store_true"); p.add_argument("--budget-s", type=float, default=3600)
     p.add_argument("--dry-run", action="store_true"); p.add_argument("--months", default="10,11,12,1,2,3,4")
+    p.add_argument("--no-reforecasts", action="store_true"); p.add_argument("--delete-grib", action="store_true")
     a = p.parse_args(); logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     cfg, defs = RegionConfig.load(), load_indices()
     months = {int(m) for m in a.months.split(",")}
     end = pd.Timestamp(a.end) if a.end else pd.Timestamp.now("UTC").tz_localize(None).normalize() - pd.Timedelta(days=2)
     start = end - pd.Timedelta(days=10) if a.recent else pd.Timestamp(a.start)
     reqlog = RequestLog.load(ROOT / "state" / "requests.json")
-    plan = []
+    # one job = one (origin, collection, year, month, forecast_type): several requests, one decode
+    jobs = []
     for origin in a.origins.split(","):
         for coll, is_rf in (("s2s-forecasts", False), ("s2s-reforecasts", True)):
+            if is_rf and a.no_reforecasts:
+                continue
             dates = init_dates(coll, origin)
             dates = dates[(dates >= start) & (dates <= end) & dates.month.isin(sorted(months))]
-            for d in dates:
+            for (y, m), grp in dates.to_series().groupby([dates.year, dates.month]):
+                days = sorted({d.day for d in grp})
+                init = pd.Timestamp(int(y), int(m), days[0])
+                hy = list(range(int(y) - 20, int(y))) if (is_rf and origin == "ecmwf") else (list(range(1991, 2021)) if is_rf else None)
                 for ft in ("control_forecast", "perturbed_forecast"):
-                    hy = list(range(d.year - 20, d.year)) if (is_rf and origin == "ecmwf") else (list(range(1991, 2021)) if is_rf else None)
-                    for req in build_request(origin, d, FIELDS, cfg.domain, ft, reforecast=is_rf, hyears=hy):
-                        tag = f"{origin}_{coll[4:6]}_{d:%Y%m%d}_{ft[:4]}_{req['level_type'][:4]}_{'acc' if '_' in req['leadtime_hour'][0] else 'ins'}"
-                        plan.append((coll, req, RAW / origin / f"{tag}.grib"))
-    todo = [x for x in plan if not x[2].exists()]
-    log.info("%d requests planned, %d to do", len(plan), len(todo))
+                    parts = []
+                    for req in build_request(origin, init, FIELDS_DOMAIN, cfg.domain, ft, reforecast=is_rf, hyears=hy, days=days):
+                        kind = "acc" if "_" in req["leadtime_hour"][0] else "ins"
+                        parts.append((f"dom_{req['level_type'][:4]}_{kind}", req))
+                    parts += hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)
+                    tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}_{ft[:4]}"
+                    jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
+    todo = [j for j in jobs if not all(t.exists() for _, _, t in j[3])]
+    n_req = sum(len(j[3]) for j in jobs)
+    log.info("%d jobs (%d requests) planned, %d jobs to do", len(jobs), n_req, len(todo))
     if a.dry_run:
-        try:
-            client = ecds_client(); cost = sum(client.estimate_costs(c, r).get("cost", {}).get("size", 0) for c, r, _ in todo[:20])
-            log.info("ECDS cost estimate for the first 20 requests: %s", cost)
-        except Exception as e:  # noqa: BLE001
-            log.info("no ECDS key: showing the first requests only (%s)", e)
-        for c, r, t in todo[:3]: log.info("%s %s -> %s", c, {k: (v if k != 'leadtime_hour' else len(v)) for k, v in r.items()}, t.name)
+        for coll, tag, is_rf, parts in todo[:2]:
+            for part, req, t in parts:
+                log.info("%s %s -> %s", coll, {k: (v if k != "leadtime_hour" else len(v)) for k, v in req.items()}, t.name)
         return 0
     client = ecds_client(); t0 = time.time()
-    for coll, req, target in todo:
+    for coll, tag, is_rf, parts in todo:
         if time.time() - t0 > a.budget_s:
-            log.warning("budget exhausted; %d requests remain (resumable)", len(todo)); break
-        got = fetch(coll, req, target, reqlog, client=client, budget_s=max(60, a.budget_s - (time.time() - t0)))
-        if got is None:
+            log.warning("budget exhausted; %d jobs remain (resumable)", len(todo)); break
+        got = {}
+        for part, req, target in parts:
+            path = fetch(coll, req, target, reqlog, client=client, budget_s=max(60, a.budget_s - (time.time() - t0)))
+            if path is None:
+                break
+            got[part] = path
+        if len(got) < len(parts):
+            log.warning("%s incomplete (%d/%d parts); will resume", tag, len(got), len(parts))
             continue
-        dec = decode(got, cfg, defs)
-        origin = req["origin"]; init = pd.Timestamp(f"{req['year']}-{req['month']}-{req['day']}")
-        for lead, parts in dec.items():
-            idx = parts["idx"].expand_dims(issue=[init]) if "hyear" not in parts["idx"].dims else parts["idx"]
-            STATE.write_members(origin, lead, "reforecast_idx" if "hyear" in req else "forecast_idx", idx)
+        size_mb = sum(p.stat().st_size for p in got.values()) / 1e6
+        t1 = time.time()
+        dec = decode(got, defs)
+        origin = parts[0][1]["origin"]
+        for lead, idx in dec.items():
+            da = to_members(idx, parts[0][1], is_rf)
+            STATE.write_members(origin, lead, "reforecast_idx" if is_rf else "forecast_idx", da)
+        log.info("%s: %.0f MB, decoded in %.0fs, %s", tag, size_mb, time.time() - t1, {k: int(v) for k, v in dec[19].sizes.items()})
+        if a.delete_grib:
+            for p_ in got.values():
+                p_.unlink()
     return 0
 
 
