@@ -113,8 +113,12 @@ def main():
                 continue
             dates = init_dates(coll, origin)
             dates = dates[(dates >= start) & (dates <= end) & dates.month.isin(sorted(months))]
+            have = STATE.read_members(origin, 19, "reforecast_idx" if is_rf else "forecast_idx")
+            done = set(pd.DatetimeIndex(have["issue"].values)) if have is not None else set()
             for (y, m), grp in dates.to_series().groupby([dates.year, dates.month]):
-                days = sorted({d.day for d in grp})
+                days = sorted({d.day for d in grp if d not in done})   # already decoded dates are not re-pulled
+                if not days:
+                    continue
                 init = pd.Timestamp(int(y), int(m), days[0])
                 hy = list(range(int(y) - 20, int(y))) if (is_rf and origin == "ecmwf") else (list(range(1991, 2021)) if is_rf else None)
                 for ft in ("control_forecast", "perturbed_forecast"):
