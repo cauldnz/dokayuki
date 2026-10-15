@@ -1,0 +1,7 @@
+.venv
+state
+logs
+site/build
+docs/screenshots
+.git
+.env

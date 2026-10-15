@@ -17,6 +17,7 @@ licence must be accepted on the ECDS profile page.
 from __future__ import annotations
 
 import json
+import threading
 import logging
 import os
 import time
@@ -131,9 +132,11 @@ def hemi_requests(origin: str, init: pd.Timestamp, forecast_type, reforecast: bo
 
 @dataclass
 class RequestLog:
-    """Persisted request ids so interrupted runs resume instead of resubmitting."""
+    """Persisted request ids so interrupted runs resume instead of resubmitting. Thread-safe:
+    several fetches may run at once (ECDS lets one user hold several requests in flight)."""
     path: Path
     entries: dict = field(default_factory=dict)
+    lock: threading.Lock = field(default_factory=threading.Lock, repr=False, compare=False)
 
     @classmethod
     def load(cls, path: Path) -> "RequestLog":
@@ -142,8 +145,25 @@ class RequestLog:
         return cls(path=path)
 
     def save(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(json.dumps(self.entries, indent=1, default=str))
+        with self.lock:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.entries, indent=1, default=str))
+            tmp.replace(self.path)
+
+    def get(self, key: str):
+        with self.lock:
+            return self.entries.get(key)
+
+    def set(self, key: str, rid) -> None:
+        with self.lock:
+            self.entries[key] = rid
+        self.save()
+
+    def pop(self, key: str) -> None:
+        with self.lock:
+            self.entries.pop(key, None)
+        self.save()
 
     def key(self, collection: str, req: dict) -> str:
         return collection + ":" + json.dumps(req, sort_keys=True)
@@ -155,6 +175,8 @@ def ecds_client():
     key = os.environ.get("ECMWF_API_KEY") or os.environ.get("ECDS_KEY")
     if not key:
         raise RuntimeError("ECMWF_API_KEY not set (and the S2S licence must be accepted on ECDS)")
+    logging.getLogger("ecmwf.datastores.processing").setLevel(logging.WARNING)
+    logging.getLogger("multiurl.base").setLevel(logging.WARNING)
     return Client(url=url, key=key, progress=False)
 
 
@@ -168,7 +190,7 @@ def fetch(collection: str, req: dict, target: Path, reqlog: RequestLog, client=N
         return target
     client = client or ecds_client()
     key = reqlog.key(collection, req)
-    rid = reqlog.entries.get(key)
+    rid = reqlog.get(key)
     remote = None
     if rid:
         try:
@@ -177,8 +199,7 @@ def fetch(collection: str, req: dict, target: Path, reqlog: RequestLog, client=N
             log.warning("stale request id %s: %s", rid, e)
     if remote is None:
         remote = client.submit(collection, req)
-        reqlog.entries[key] = remote.request_id
-        reqlog.save()
+        reqlog.set(key, remote.request_id)
         log.info("submitted %s -> %s", collection, remote.request_id)
     t0 = time.time()
     while time.time() - t0 < budget_s:
@@ -193,8 +214,7 @@ def fetch(collection: str, req: dict, target: Path, reqlog: RequestLog, client=N
             except Exception:  # noqa: BLE001
                 detail = ""
             log.error("request %s %s: %s", remote.request_id, status, detail)
-            reqlog.entries.pop(key, None)
-            reqlog.save()
+            reqlog.pop(key)
             return None
         time.sleep(poll_s)
     log.warning("budget exhausted waiting for %s (status %s); will resume next run", remote.request_id, remote.status)

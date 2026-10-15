@@ -9,7 +9,9 @@ Usage: pull_s2s.py --origins ecmwf,jma [--start 2015-01-01] [--end ...] [--recen
 import argparse
 import logging
 import sys
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 import pandas as pd
@@ -113,6 +115,7 @@ def main():
     p.add_argument("--end", default=None); p.add_argument("--recent", action="store_true"); p.add_argument("--budget-s", type=float, default=3600)
     p.add_argument("--dry-run", action="store_true"); p.add_argument("--months", default="10,11,12,1,2,3,4")
     p.add_argument("--no-reforecasts", action="store_true"); p.add_argument("--delete-grib", action="store_true")
+    p.add_argument("--parallel", type=int, default=4, help="requests in flight at once on ECDS")
     a = p.parse_args(); logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     cfg, defs = RegionConfig.load(), load_indices()
     months = {int(m) for m in a.months.split(",")}
@@ -142,42 +145,60 @@ def main():
                     parts += [(f"{ft[:4]}_{part}", req) for part, req in hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)]
                 tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}"
                 jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
-    todo = [j for j in jobs if not all(t.exists() for _, _, t in j[3])]
+    todo = jobs   # fetch() returns at once for a GRIB already on disk, so a job with every part present only decodes
     n_req = sum(len(j[3]) for j in jobs)
-    log.info("%d jobs (%d requests) planned, %d jobs to do", len(jobs), n_req, len(todo))
+    n_fetch = sum(1 for j in jobs for _, _, t in j[3] if not t.exists())
+    log.info("%d jobs (%d requests) planned, %d requests to fetch", len(jobs), n_req, n_fetch)
     if a.dry_run:
         for coll, tag, is_rf, parts in todo[:2]:
             for part, req, t in parts:
                 log.info("%s %s -> %s", coll, {k: (v if k != "leadtime_hour" else len(v)) for k, v in req.items()}, t.name)
         return 0
-    client = ecds_client(); t0 = time.time()
-    for coll, tag, is_rf, parts in todo:
-        if time.time() - t0 > a.budget_s:
-            log.warning("budget exhausted; %d jobs remain (resumable)", len(todo)); break
-        got = {}
-        for part, req, target in parts:
-            path = fetch(coll, req, target, reqlog, client=client, budget_s=max(60, a.budget_s - (time.time() - t0)))
-            if path is None:
-                break
-            got[part] = path
-        if len(got) < len(parts):
-            log.warning("%s incomplete (%d/%d parts); will resume", tag, len(got), len(parts))
-            continue
-        size_mb = sum(p.stat().st_size for p in got.values()) / 1e6
-        t1 = time.time()
-        try:
-            dec = decode(got, defs)
-        except Exception as e:  # noqa: BLE001
-            log.exception("%s: decode failed (%s); GRIB kept for a rerun", tag, e)
-            continue
-        origin = parts[0][1]["origin"]
-        for lead, idx in dec.items():
-            da = to_members(idx, parts[0][1], is_rf)
-            STATE.write_members(origin, lead, "reforecast_idx" if is_rf else "forecast_idx", da)
-        log.info("%s: %.0f MB, decoded in %.0fs, %s", tag, size_mb, time.time() - t1, {k: int(v) for k, v in dec[19].sizes.items()})
-        if a.delete_grib:
-            for p_ in got.values():
-                p_.unlink()
+    t0 = time.time()
+    local = threading.local()
+
+    def client_for_thread():
+        if not hasattr(local, "client"):
+            local.client = ecds_client()
+        return local.client
+
+    def fetch_part(coll, req, target):
+        budget = max(60, a.budget_s - (time.time() - t0))
+        return fetch(coll, req, target, reqlog, client=client_for_thread(), budget_s=budget)
+
+    # all parts of all jobs go to the pool in job order; up to --parallel requests in flight at
+    # once; each job decodes as soon as its own parts are in
+    pool = ThreadPoolExecutor(max_workers=a.parallel)
+    futures = {tag: [(part, pool.submit(fetch_part, coll, req, target)) for part, req, target in parts]
+               for coll, tag, is_rf, parts in todo}
+    try:
+        for coll, tag, is_rf, parts in todo:
+            got = {}
+            for part, fut in futures[tag]:
+                path = fut.result()
+                if path is not None:
+                    got[part] = path
+            if len(got) < len(parts):
+                log.warning("%s incomplete (%d/%d parts); will resume", tag, len(got), len(parts))
+                continue
+            size_mb = sum(p.stat().st_size for p in got.values()) / 1e6
+            t1 = time.time()
+            try:
+                dec = decode(got, defs)
+            except Exception as e:  # noqa: BLE001
+                log.exception("%s: decode failed (%s); GRIB kept for a rerun", tag, e)
+                continue
+            origin = parts[0][1]["origin"]
+            for lead, idx in dec.items():
+                da = to_members(idx, parts[0][1], is_rf)
+                STATE.write_members(origin, lead, "reforecast_idx" if is_rf else "forecast_idx", da)
+            log.info("%s: %.0f MB, decoded in %.0fs, %s; %.0f min elapsed", tag, size_mb, time.time() - t1,
+                     {k: int(v) for k, v in dec[19].sizes.items()}, (time.time() - t0) / 60)
+            if a.delete_grib:
+                for p_ in got.values():
+                    p_.unlink()
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
     return 0
 
 

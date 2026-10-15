@@ -12,7 +12,7 @@ ORIGINS="${1:-ecmwf}"; START="${2:-2016-10-01}"; END="${3:-2023-04-30}"
 mkdir -p logs
 while true; do
   .venv/bin/python scripts/pull_s2s.py --origins "$ORIGINS" --start "$START" --end "$END" --budget-s 86400 --delete-grib 2>&1 | tee -a logs/pull_history_s2s.log
-  if .venv/bin/python scripts/pull_s2s.py --origins "$ORIGINS" --start "$START" --end "$END" --dry-run 2>&1 | grep -q " 0 jobs to do"; then
+  if .venv/bin/python scripts/pull_s2s.py --origins "$ORIGINS" --start "$START" --end "$END" --dry-run 2>&1 | grep -q " 0 requests to fetch"; then
     echo "history pull complete"; break
   fi
   echo "resuming in 60 s"; sleep 60
