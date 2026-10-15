@@ -40,6 +40,7 @@ uv venv .venv --python 3.13 && uv pip install --python .venv/bin/python -e ".[de
 .venv/bin/python -m pytest                      # unit, leakage and parity tests (synthetic fixtures)
 scripts/bootstrap.sh                            # free history (WeatherBench2 ERA5 1.5°, AO, MJO)
 scripts/bootstrap.sh --with-cds --with-s2s      # needs ECMWF_API_KEY (CDS and S2S licences accepted)
+make history-s2s                                # the S2S history: ~0.5 MB/s from ECDS, so days; resumable, run it locally
 ```
 
 One credential, `ECMWF_API_KEY`, serves both ECMWF data stores (ECDS for S2S, CDS for ERA5).

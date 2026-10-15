@@ -22,5 +22,8 @@ site:             ## build the site from the strong fixture (or FORECAST=path/to
 backtest:         ## Phase 3 (needs state/ with S2S members and CDS truth)
 	$(PY) scripts/run_backtest.py
 
+history-s2s:      ## one-off S2S history pull, resumable, days of wall clock: run it locally (needs ECMWF_API_KEY)
+	scripts/pull_history_s2s.sh
+
 daily:            ## the operational run (needs ECMWF_API_KEY)
 	$(PY) scripts/daily.py
