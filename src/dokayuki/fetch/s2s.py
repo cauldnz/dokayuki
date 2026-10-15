@@ -231,18 +231,25 @@ def open_grib_daily(path: Path, kind_by_short: dict[str, str] | None = None) -> 
     """
     import cfgrib  # noqa: WPS433
     dss = cfgrib.open_datasets(str(path), backend_kwargs={"indexpath": ""})
-    out = {}
+    pieces: dict[str, list[xr.DataArray]] = {}
+
+    def add(d: dict) -> None:
+        for k, v in d.items():
+            pieces.setdefault(k, []).append(v)
+
     for ds in dss:
         for v in ds.data_vars:
             # split pressure-level variables into our short names (t850, z500, u850, v850, u10hpa)
             if "isobaricInhPa" in ds[v].dims:
                 for lev in ds["isobaricInhPa"].values:
-                    out.update(_daily(ds[v].sel(isobaricInhPa=lev, drop=True), _short(v, float(lev))))
+                    add(_daily(ds[v].sel(isobaricInhPa=lev, drop=True), _short(v, float(lev))))
                 continue
             if "isobaricInhPa" in ds[v].coords:
-                out.update(_daily(ds[v].drop_vars("isobaricInhPa"), _short(v, float(ds["isobaricInhPa"].values))))
+                add(_daily(ds[v].drop_vars("isobaricInhPa"), _short(v, float(ds["isobaricInhPa"].values))))
                 continue
-            out.update(_daily(ds[v], v))
+            add(_daily(ds[v], v))
+    # control (number 0) and perturbed (1..N) arrive as separate datasets: join them on number
+    out = {k: (xr.concat(v, dim="number").sortby("number") if len(v) > 1 else v[0]) for k, v in pieces.items()}
     return xr.Dataset(out)
 
 

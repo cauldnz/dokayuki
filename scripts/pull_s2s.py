@@ -138,11 +138,11 @@ def main():
                     continue
                 init = pd.Timestamp(int(y), int(m), days[0])
                 hy = list(range(int(y) - 20, int(y))) if (is_rf and origin == "ecmwf") else (list(range(1991, 2021)) if is_rf else None)
-                parts = []   # both forecast types in one job so control and perturbed members land together
-                for ft in ("control_forecast", "perturbed_forecast"):
-                    for req in build_request(origin, init, FIELDS_DOMAIN, cfg.domain, ft, reforecast=is_rf, hyears=hy, days=days):
-                        parts.append((f"{ft[:4]}_dom_{part_name(req)}", req))
-                    parts += [(f"{ft[:4]}_{part}", req) for part, req in hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)]
+                parts = []   # control and perturbed members in one request (ECDS time is mostly per request)
+                ft = ["control_forecast", "perturbed_forecast"]
+                for req in build_request(origin, init, FIELDS_DOMAIN, cfg.domain, ft, reforecast=is_rf, hyears=hy, days=days):
+                    parts.append((f"both_dom_{part_name(req)}", req))
+                parts += [(f"both_{part}", req) for part, req in hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)]
                 tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}"
                 jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
     todo = jobs   # fetch() returns at once for a GRIB already on disk, so a job with every part present only decodes
