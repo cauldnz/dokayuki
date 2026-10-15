@@ -11,9 +11,9 @@ Reachability from the build container, via its HTTPS egress proxy
 
 | Host | Result | Note |
 |---|---|---|
-| `ecds.ecmwf.int` | 200 (`/api/catalogue/v1/collections/s2s-forecasts` → 200) | ECDS reachable; needs `ECDS_URL`/`ECDS_KEY` for retrievals (not present in the container) |
+| `ecds.ecmwf.int` | 200 (`/api/catalogue/v1/collections/s2s-forecasts` → 200) | ECDS reachable; needs `ECMWF_API_KEY` for retrievals |
 | `storage.googleapis.com/gcp-public-data-arco-era5/ar/…/.zmetadata` | 200 | ARCO-ERA5 anonymous read works (directory listing itself is 404, expected) |
-| `cds.climate.copernicus.eu` | 200 | fallback only; needs `CDSAPI_KEY` |
+| `cds.climate.copernicus.eu` | 200 | operational path; needs `ECMWF_API_KEY` (the same key as ECDS) |
 | `iridl.ldeo.columbia.edu` | 200 (`/SOURCES/.BoM/.MJO/.RMM/` → 302 redirect) | IRI Data Library reachable; the ECMWF S2S collection needs a free login |
 | `cpc.ncep.noaa.gov` (AO page and `ftp.cpc.ncep.noaa.gov/cwlinks/…ao…csv`) | 200 | AO daily index reachable |
 | `www.bom.gov.au/climate/mjo/graphics/rmm.74toRealtime.txt` | 403 with curl's default UA, **200 with a browser User-Agent** | BoM blocks non-browser UAs; fetcher sets a UA. IRI mirror is the fallback |
@@ -125,7 +125,7 @@ So: **CDS is the primary operational ERA5 path** (keyed, area-subset requests ar
 daily-statistics datasets give daily snowfall over the SNOW-W box at 0.25°, and daily 1.5°
 fields plus 10 hPa wind by area), and the WB2 1.5° store is the free bulk-history path for the
 ERA5-era analysis and backtest truth up to 2023-01-10. Everything after 2023-01-10 (and all
-snowfall / 10 hPa wind) requires `CDSAPI_KEY`.
+snowfall / 10 hPa wind) requires `ECMWF_API_KEY`.
 
 ## ECDS S2S request schema (probed 2026-10-14)
 

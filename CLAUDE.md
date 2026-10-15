@@ -23,7 +23,7 @@ HokkaidoWilds.org-family page. Personal, non-commercial research project by Chri
   lift is "no demonstrated improvement".
 - Physics before fitting: no predictor without a cited rationale; no citation without a row in
   `docs/REFERENCES_CHECK.md`.
-- Never commit credentials or raw GRIB. Keys come from `ECDS_KEY`, `CDSAPI_KEY` env vars only.
+- Never commit credentials or raw GRIB. The one key comes from the `ECMWF_API_KEY` env var only.
 - Never publish from an invalid forecast: `dokayuki.validate.check_forecast_json` gates the build.
 - Stop and ask before: credentialed or paid actions, the first Pages publish, pulls over ~20 GB.
 

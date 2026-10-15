@@ -5,7 +5,7 @@ Two paths:
    (1959-01-01 .. 2023-01-10, exactly the reference lattice, chunks of 8 steps x globe). Cheap
    for 2-D fields (~0.6 MB per 2-day chunk) and moderate for 3-D fields (~7.8 MB per chunk, all
    13 levels in one chunk). No snowfall and no 10 hPa level in this store.
-2. **Keyed, current**: Copernicus CDS (``CDSAPI_URL``/``CDSAPI_KEY``) for everything after
+2. **Keyed, current**: Copernicus CDS (``ECMWF_API_KEY``; ``CDSAPI_URL`` optional) for everything after
    2023-01-10, for the 0.25-degree snowfall over the SNOW-W mask (daily-statistics dataset) and
    for 10 hPa zonal wind. ERA5T lands ~5 days behind real time.
 
@@ -138,13 +138,14 @@ def pull_land_sea_mask(domain: Box, out: Path, url: str = WB2_15) -> xr.DataArra
 
 # ----------------------------------------------------------------------------- CDS (keyed)
 def cds_client():
-    """A cdsapi client from CDSAPI_URL / CDSAPI_KEY (raises if missing)."""
+    """A cdsapi client. One key serves ECDS and CDS: ``ECMWF_API_KEY`` (``CDSAPI_KEY`` still honoured);
+    the URL is public and defaults to the CDS endpoint (``CDSAPI_URL`` overrides)."""
     import os
     import cdsapi  # noqa: WPS433
     url = os.environ.get("CDSAPI_URL", "https://cds.climate.copernicus.eu/api")
-    key = os.environ.get("CDSAPI_KEY")
+    key = os.environ.get("ECMWF_API_KEY") or os.environ.get("CDSAPI_KEY")
     if not key:
-        raise RuntimeError("CDSAPI_KEY not set")
+        raise RuntimeError("ECMWF_API_KEY not set")
     return cdsapi.Client(url=url, key=key, quiet=True)
 
 

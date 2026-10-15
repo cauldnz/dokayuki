@@ -39,11 +39,12 @@ GitHub Issues as the tracker, the five default triage labels, single-context dom
 uv venv .venv --python 3.13 && uv pip install --python .venv/bin/python -e ".[dev,fetch]"
 .venv/bin/python -m pytest                      # unit, leakage and parity tests (synthetic fixtures)
 scripts/bootstrap.sh                            # free history (WeatherBench2 ERA5 1.5°, AO, MJO)
-scripts/bootstrap.sh --with-cds --with-s2s      # needs CDSAPI_KEY and ECDS_KEY (S2S licence accepted)
+scripts/bootstrap.sh --with-cds --with-s2s      # needs ECMWF_API_KEY (CDS and S2S licences accepted)
 ```
 
-Credentials are read from environment variables only (`ECDS_URL`/`ECDS_KEY`,
-`CDSAPI_URL`/`CDSAPI_KEY`) and are never committed.
+One credential, `ECMWF_API_KEY`, serves both ECMWF data stores (ECDS for S2S, CDS for ERA5).
+It is read from the environment only and never committed. The endpoint URLs are public
+defaults in code (`ECDS_URL` and `CDSAPI_URL` override them).
 
 ## Licensing
 

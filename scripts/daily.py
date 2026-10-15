@@ -3,8 +3,8 @@ any failure after a last good forecast exists rebuilds that forecast with the st
 
 Stages (each timed and logged):
   1. observed indices (AO, MJO)                      -> state/obs_indices.parquet
-  2. ERA5T weeks via CDS                              -> state/era5_* (needs CDSAPI_KEY)
-  3. newest ECMWF/JMA runs (+ reforecasts) via ECDS   -> state/members/* (needs ECDS_KEY; resumable)
+  2. ERA5T weeks via CDS                              -> state/era5_* (needs ECMWF_API_KEY)
+  3. newest ECMWF/JMA runs (+ reforecasts) via ECDS   -> state/members/* (needs ECMWF_API_KEY; resumable)
   4. refit PBC per index and lead, Duet              (all fits are small)
   5. Stage-3 snow model (only if the backtest says it is skilful)
   6. assemble + validate the forecast JSON           -> state/latest.json

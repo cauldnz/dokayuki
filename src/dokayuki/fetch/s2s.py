@@ -10,7 +10,8 @@ accumulated/instantaneous 24-h steps or instants like ``"456"``), ``area`` [N, W
 Only the domain box, the needed variables and the steps for days 18..33 are requested.
 Requests are resumable: submit, persist the request id, poll, download.
 
-Credentials: ``ECDS_URL`` (default https://ecds.ecmwf.int/api) and ``ECDS_KEY``; the S2S
+Credentials: ``ECMWF_API_KEY`` (the same key serves CDS; ``ECDS_KEY`` still honoured) and the
+public ``ECDS_URL`` (default https://ecds.ecmwf.int/api); the S2S
 licence must be accepted on the ECDS profile page.
 """
 from __future__ import annotations
@@ -151,9 +152,9 @@ class RequestLog:
 def ecds_client():
     from ecmwf.datastores import Client
     url = os.environ.get("ECDS_URL", "https://ecds.ecmwf.int/api")
-    key = os.environ.get("ECDS_KEY")
+    key = os.environ.get("ECMWF_API_KEY") or os.environ.get("ECDS_KEY")
     if not key:
-        raise RuntimeError("ECDS_KEY not set (and the S2S licence must be accepted on ECDS)")
+        raise RuntimeError("ECMWF_API_KEY not set (and the S2S licence must be accepted on ECDS)")
     return Client(url=url, key=key, progress=False)
 
 

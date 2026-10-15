@@ -22,5 +22,5 @@ site:             ## build the site from the strong fixture (or FORECAST=path/to
 backtest:         ## Phase 3 (needs state/ with S2S members and CDS truth)
 	$(PY) scripts/run_backtest.py
 
-daily:            ## the operational run (needs ECDS_KEY and CDSAPI_KEY)
+daily:            ## the operational run (needs ECMWF_API_KEY)
 	$(PY) scripts/daily.py

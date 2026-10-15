@@ -8,10 +8,7 @@ on:
 permissions: { contents: write, pages: write, id-token: write }
 concurrency: { group: daily, cancel-in-progress: false }
 env:
-  ECDS_URL: ${{ secrets.ECDS_URL }}
-  ECDS_KEY: ${{ secrets.ECDS_KEY }}
-  CDSAPI_URL: ${{ secrets.CDSAPI_URL }}
-  CDSAPI_KEY: ${{ secrets.CDSAPI_KEY }}
+  ECMWF_API_KEY: ${{ secrets.ECMWF_API_KEY }}   # one key for ECDS (S2S) and CDS (ERA5); the URLs are public defaults in code
 jobs:
   run:
     runs-on: ubuntu-latest
