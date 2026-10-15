@@ -28,6 +28,8 @@ jobs:
             fixture-*) .venv/bin/python scripts/build_site.py --fixture "${SOURCE#fixture-}" --out site/build/publish --preview ;;
             latest)    .venv/bin/python scripts/build_site.py --forecast state/latest.json --out site/build/publish ;;
           esac
+      - uses: actions/configure-pages@v5
+        with: { enablement: true }
       - uses: actions/upload-pages-artifact@v3
         with: { path: site/build/publish }
   deploy:
