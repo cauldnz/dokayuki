@@ -20,8 +20,15 @@ p.add_argument("--months", default="10,11,12,1,2,3,4")
 p.add_argument("--out", default="state/era5_15_daily.zarr")
 p.add_argument("--max-gb", type=float, default=20.0)
 p.add_argument("--dry-run", action="store_true")
+p.add_argument("--hemispheric", action="store_true", help="use region.yaml domain_hemispheric (20-90N, all longitudes)")
 a = p.parse_args()
 cfg = RegionConfig.load()
+if a.hemispheric:
+    from dokayuki.config import Box, load_yaml
+    h = load_yaml("region")["domain_hemispheric"]
+    domain = Box(lat=tuple(h["lat"]), lon=tuple(h["lon"]))
+else:
+    domain = cfg.domain
 fields = a.fields.split(",")
 months = tuple(int(m) for m in a.months.split(",")) if a.months else None
 est = estimate_pull(fields, a.start, a.end, months)
@@ -32,6 +39,7 @@ if est["gb_total"] > a.max_gb:
 if a.dry_run:
     sys.exit(0)
 t0 = time.time()
-pull_land_sea_mask(cfg.domain, Path("state/lsm_15.nc"))
-pull_daily_domain(fields, cfg.domain, a.start, a.end, Path(a.out), months=months)
+if not a.hemispheric:
+    pull_land_sea_mask(cfg.domain, Path("state/lsm_15.nc"))
+pull_daily_domain(fields, domain, a.start, a.end, Path(a.out), months=months)
 logging.info("done in %.0fs", time.time() - t0)

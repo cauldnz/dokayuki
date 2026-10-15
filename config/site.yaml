@@ -13,7 +13,8 @@ brand:
   hero_credit: ""
 wording:
   signal_name: "Book-ahead signal"          # alternative: "Beat-the-crowd signal"
-  signal_blurb: "Weeks 3 and 4 are when you can still act: get leave approved, book flights while they're cheap and grab a room before the crowd notices. We can't promise snow; we can shift the odds early. \"Week 3 looks better than week 4 for a trip\", never \"book Tuesday\"."
+  signal_blurb: "Three to four weeks out is the last point where leave, flights and a room are still cheap. I cannot promise snow at that range. I can tilt the odds. The most this page will ever say is \"week 3 looks better than week 4\"; it will never say \"book Tuesday\"."
+  disclaimer: "Personal research. Not advice."
   gag: "Japow. Alta pow. Albany pow.*"
   gag_footnote: "*Nobody has ever flown to Albany, NY for the powder. Probably."
 modes:

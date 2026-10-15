@@ -18,7 +18,7 @@
 <a class="skip" href="#main">Skip to content</a>
 <header class="site-header">
   <div class="wrap header-row">
-    <div class="brand"><a class="brand-logo" href="{{ site.hw_home_url }}" aria-label="HokkaidoWilds.org home"><img src="{{ rel }}{{ site.brand.logo }}" alt="HokkaidoWilds diamond logo" width="31" height="80"></a><span class="brand-text"><a class="brand-title" href="{{ rel }}index.html">{{ site.site_title }}</a><span class="brand-sub">{{ site.tagline }} · part of <a href="{{ site.hw_home_url }}">HokkaidoWilds.org</a></span></span></div>
+    <div class="brand"><a class="brand-logo" href="{{ site.hw_home_url }}" aria-label="HokkaidoWilds.org home"><img src="{{ rel }}{{ site.brand.logo }}" alt="HokkaidoWilds diamond logo" width="31" height="80"></a><span class="brand-text"><a class="brand-title" href="{{ rel }}index.html">{{ site.site_title }}</a><span class="brand-sub"><span class="gag">{{ site.wording.gag }}</span> · part of <a href="{{ site.hw_home_url }}">HokkaidoWilds.org</a></span></span></div>
     <nav class="controls" aria-label="View options">
       <div class="mode-toggle" role="group" aria-label="Choose how much detail to show">
         <button type="button" class="mode-btn" data-set-mode="normie" aria-pressed="false">Normie</button>
@@ -36,12 +36,12 @@
 </main>
 <footer class="site-footer">
   <div class="wrap">
-    <p class="safety"><strong>{{ site.safety.line }}</strong> Check the official sources and the conditions on the day:
+    <p class="safety">Before you go, read the people whose job this is:
       {% for l in site.safety.links %}<a href="{{ l.url }}">{{ l.name }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</p>
-    <p class="gag">{{ site.wording.gag }} <span class="muted">{{ site.wording.gag_footnote }}</span></p>
-    <p class="credits">Part of <a href="{{ site.hw_home_url }}">HokkaidoWilds.org</a>. By <a href="{{ site.author_url }}">{{ site.author_name }}</a>.{% if site.hw_post_url %} Read the <a href="{{ site.hw_post_url }}">background post</a>.{% endif %}
-      Code MIT; outlooks CC BY-NC 4.0 (non-commercial). <a href="{{ rel }}latest.json">latest.json</a> · <a href="{{ rel }}archive/">archive</a> · <a href="{{ rel }}embed.html">embed</a></p>
+    <p class="credits">Part of <a href="{{ site.hw_home_url }}">HokkaidoWilds.org</a>. By <a href="{{ site.author_url }}">{{ site.author_name }}</a>.{% if site.hw_post_url %} Background: <a href="{{ site.hw_post_url }}">the post</a>.{% endif %}
+      Code MIT; outlooks CC BY-NC 4.0. <a href="{{ rel }}latest.json">latest.json</a> · <a href="{{ rel }}archive/">archive</a> · <a href="{{ rel }}embed.html">embed</a></p>
     <ul class="attrib">{% for a in site.attribution %}<li>{{ a }}</li>{% endfor %}</ul>
+    <p class="disclaimer small muted">{{ site.wording.disclaimer }} {{ site.safety.line }} <span class="gag-note">{{ site.wording.gag_footnote }}</span></p>
   </div>
 </footer>
 <script src="{{ rel }}static/app.js"></script>

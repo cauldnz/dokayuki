@@ -51,9 +51,17 @@ The toggle sits at the top, Normie is the default, the choice persists per viewe
 set in `config/site.yaml: wording.signal_name`): tercile bar, P(big week), signal grade and one
 plain line per week; the ingredient chain as five friendly cards (Trigger → Outbreak → Steering →
 Fuel → Delivery), each with an icon, a one-liner and a lining up / neutral / against state per
-week; "what's driving things now"; the safety line. Tone: a local's mate, not a met office.
-The running gag ("Japow. Alta pow. Albany pow.*", footnote "*Nobody has ever flown to Albany,
-NY for the powder. Probably.") appears once, in the footer.
+week; "what's driving things now"; the safety links. Voice: the author's house style. Dry,
+terse, first person singular, conclusion first, then the evidence, then the caveat once.
+Uncertainty is a number or a condition, never a hedge. Sentence case. No exclamation marks, no
+emoji, no "robust", "comprehensive", "delve", "key takeaways". The running gag ("Japow. Alta pow.
+Albany pow.*") sits in the header under the title; its footnote ("*Nobody has ever flown to
+Albany, NY for the powder. Probably.") sits with the single disclaimer at the end of the page.
+One disclaimer, at the end, in small type; nowhere else.
+Normie mode also carries a "Built on published work" paragraph: the PBC paper, its predecessor,
+and the sea-effect, monsoon, vortex and blocking literature as linked author–year citations. The
+`cites()` helper renders a key only when it is verified in `docs/REFERENCES_CHECK.md`, so an
+unverified entry silently drops out of the sentence rather than appearing unlinked.
 
 **Copy rule:** never imply certainty. "Week 3 looks better than week 4 for a trip", never
 "book Tuesday". No price data or booking links in v1.

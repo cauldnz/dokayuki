@@ -14,9 +14,9 @@
   </div>
 </section>
 
-{% if d.preview %}<div class="banner banner-stale" role="status"><strong>Design preview.</strong> Every number on this page is fixture data for layout review, not a forecast.</div>{% endif %}
-{% if d.stale %}<div class="banner banner-stale" role="status">Upstream data has not arrived since {{ d.stale_since }}. This is the last good outlook; treat it as ageing.</div>{% endif %}
-{% if not d.snow_model.skilful %}<div class="banner banner-warn" role="status">The snow mapping is <strong>not yet skilful</strong> in the backtest (RPSS {{ d.snow_model.skill.rpss|num }}, {{ d.snow_model.skill.period }}), so the snow-week calls below are shown greyed out. The circulation indices are the product.</div>{% endif %}
+{% if d.preview %}<div class="banner banner-stale" role="status"><strong>Design preview.</strong> Every number on this page is fixture data. None of it is a forecast.</div>{% endif %}
+{% if d.stale %}<div class="banner banner-stale" role="status">No new model data since {{ d.stale_since }}. This is the last good outlook. It is ageing.</div>{% endif %}
+{% if not d.snow_model.skilful %}<div class="banner banner-warn" role="status">The snow mapping does not beat climatology in the backtest (RPSS {{ d.snow_model.skill.rpss|num }}, {{ d.snow_model.skill.period }}), so I grey out the snow-week calls. The circulation indices are the product until it does.</div>{% endif %}
 
 <section class="weeks" aria-labelledby="weeks-h">
   <h2 id="weeks-h"><span class="en">{{ site.wording.signal_name }}</span><span class="ja">先読みシグナル</span></h2>
@@ -35,14 +35,14 @@
         <div class="tercile-legend"><span>below</span><span>near normal</span><span>above</span></div>
         <p class="plain">{{ w.line }}</p>
         <div class="nerd-only rubric">
-          <p class="rubric-head">Outlook breakdown <span class="muted">(what pushes the odds, logistic-model term contributions)</span></p>
+          <p class="rubric-head">What moves the odds <span class="muted">(logistic-model term contributions)</span></p>
           {{ factor_bars(w.factors) }}
           <table class="data-table"><caption class="sr-only">Factor contributions for {{ w.label }}</caption><thead><tr><th>Factor</th><th>Contribution</th></tr></thead><tbody>
             {% for f in w.factors %}<tr><td>{{ f.name }}</td><td>{{ f.contribution|num('+') }}</td></tr>{% endfor %}</tbody></table>
           {% if w.lift %}
           <details class="skill"><summary class="badge{% if not w.lift.significant %} badge-off{% endif %}">{{ w.lift_badge }}</summary>
-            <p><strong>Lift first.</strong> The operationally debiased model scores RPSS {{ w.lift.skill_debiased|num }} and the raw model {{ w.lift.skill_raw|num }} against climatology; our calibrated product scores {{ w.lift.skill_pbc|num }}. The badge is the difference to the debiased model with its 95% block-bootstrap interval ({{ w.skill.period }}). Big-week Brier skill {{ w.skill.bss_big|num }}, ROC area {{ w.skill.roc_big|num }}. Small numbers are the honest expectation at weeks 3–4.</p></details>
-          {% else %}<p class="badge badge-off">No proven skill yet</p>{% endif %}
+            <p>Lift first. The debiased model scores RPSS {{ w.lift.skill_debiased|num }} and the raw model {{ w.lift.skill_raw|num }} against climatology. The calibrated product scores {{ w.lift.skill_pbc|num }}. The badge is the difference to the debiased model with its 95% block-bootstrap interval ({{ w.skill.period }}). Big-week Brier skill {{ w.skill.bss_big|num }}, ROC area {{ w.skill.roc_big|num }}. At weeks 3 and 4 these numbers are small when they are real.</p></details>
+          {% else %}<p class="badge badge-off">No skill shown yet</p>{% endif %}
         </div>
       </div>
     </article>
@@ -52,7 +52,7 @@
 
 <section class="chain" aria-labelledby="chain-h">
   <h2 id="chain-h"><span class="en">The ingredient chain</span><span class="ja">雪のレシピ</span></h2>
-  <p class="lede">Five things have to line up for a big week on the Sea of Japan side. Week 3 on the left, week 4 on the right.</p>
+  <p class="lede">A big week on the Sea of Japan side needs five things in a row. Each card shows week 3 then week 4.</p>
   <div class="chain-grid">
   {% for st in d.weeks[0].stages %}
     {% set st4 = d.weeks[1].stages[loop.index0] %}
@@ -73,13 +73,18 @@
   </div>
 </section>
 
+<section class="research" aria-labelledby="research-h">
+  <h2 id="research-h"><span class="en">Built on published work</span><span class="ja">根拠となる研究</span></h2>
+  <p class="lede">The calibration is Probabilistic Bias Correction{{ cites(("guan2026advancing", "Guan, Mouatadid et al. 2026")) }}, which grew out of adaptive bias correction for subseasonal forecasts{{ cites(("mouatadid2023adaptive", "Mouatadid et al. 2023")) }}. I apply it to the ECMWF and JMA ensembles in the WMO S2S database and verify against ERA5. The ingredient chain is the standard physics of Sea of Japan snow: the Siberian High{{ cites(("panagiotopoulos2005observed", "Panagiotopoulos et al. 2005")) }}, the winter monsoon gradient{{ cites(("hanawa1988surface", "Hanawa et al. 1988"), ("wang2010how", "Wang & Chen 2010")) }}, sea-effect instability over warm water{{ cites(("steenburgh2020perspectives", "Steenburgh & Nakai 2020"), ("west2019characteristics", "West et al. 2019"), ("takahashi2013impact", "Takahashi & Idenaga 2013")) }}, the polar vortex and Arctic Oscillation{{ cites(("thompson1998arctic", "Thompson & Wallace 1998"), ("baldwin2001stratospheric", "Baldwin & Dunkerton 2001"), ("kretschmer2018more", "Kretschmer et al. 2018")) }}, and Ural blocking{{ cites(("peings2019ural", "Peings 2019")) }}. The claim here is small: I add no physics. The headline number is whether calibration beats the model's own debiased output{{ cites(("weigel2007discrete", "Weigel et al. 2007"), ("delsole2014comparing", "DelSole & Tippett 2014")) }}. Every reference on this page has a checked DOI; the full list is in Nerd mode and on the <a href="{{ rel }}method.html">method page</a>.</p>
+</section>
+
 <section class="drivers" aria-labelledby="drivers-h">
-  <h2 id="drivers-h"><span class="en">What's driving things now</span><span class="ja">現在の背景場</span></h2>
+  <h2 id="drivers-h"><span class="en">What I can see now</span><span class="ja">現在の背景場</span></h2>
   <div class="strip">
-    <div class="strip-item"><span class="strip-k">Arctic Oscillation</span><span class="strip-v">{{ d.drivers.ao.value|num('+', 1) }}</span><span class="strip-s">{% if d.drivers.ao.value <= -1 %}strongly negative: cold air spills south{% elif d.drivers.ao.value >= 1 %}positive: cold air stays polar{% else %}near neutral{% endif %}<span class="nerd-only"> · {{ d.drivers.ao.date }}</span></span></div>
+    <div class="strip-item"><span class="strip-k">Arctic Oscillation</span><span class="strip-v">{{ d.drivers.ao.value|num('+', 1) }}</span><span class="strip-s">{% if d.drivers.ao.value <= -1 %}negative: cold air spills south{% elif d.drivers.ao.value >= 1 %}positive: cold air stays polar{% else %}near neutral{% endif %}<span class="nerd-only"> · {{ d.drivers.ao.date }}</span></span></div>
     <div class="strip-item"><span class="strip-k">MJO</span>{{ mjo_wheel(d.drivers.mjo.phase, d.drivers.mjo.amp, d.drivers.mjo.rmm1, d.drivers.mjo.rmm2, 96) }}<span class="strip-s">phase {{ d.drivers.mjo.phase }}, amplitude {{ d.drivers.mjo.amp|num('', 1) }}{% if d.drivers.mjo.amp < 1 %} (weak){% endif %}</span></div>
     <div class="strip-item"><span class="strip-k">Polar vortex</span><span class="strip-v">{{ d.drivers.vortex.state }}</span><span class="strip-s">10 hPa wind at 60°N {{ d.drivers.vortex.u10|num('', 0) }} m/s<span class="nerd-only"> · {{ d.drivers.vortex.date }}</span></span></div>
-    <div class="strip-item"><span class="strip-k">Sea of Japan SST</span><span class="strip-v">{{ d.drivers.sst_anom|num('+', 1) }} °C</span><span class="strip-s">{% if d.drivers.sst_anom > 0.3 %}warmer sea: more fuel for sea-effect snow{% elif d.drivers.sst_anom < -0.3 %}cooler sea: a touch less fuel{% else %}near normal{% endif %}</span></div>
+    <div class="strip-item"><span class="strip-k">Sea of Japan SST</span><span class="strip-v">{{ d.drivers.sst_anom|num('+', 1) }} °C</span><span class="strip-s">{% if d.drivers.sst_anom > 0.3 %}warm sea: more fuel for sea-effect snow{% elif d.drivers.sst_anom < -0.3 %}cool sea: less fuel{% else %}near normal{% endif %}</span></div>
     <div class="strip-item"><span class="strip-k">Recent snow vs normal</span>
       {% for name, r in d.drivers.recent_snow.items() %}<span class="strip-s"><span class="ja-inline">{{ r.ja }}</span> {{ name }}: {{ r.obs_cm }} cm vs {{ r.normal_cm }} cm normal{% if r.obs_cm > r.normal_cm * 1.2 %} ↑{% elif r.obs_cm < r.normal_cm * 0.8 %} ↓{% endif %}</span>{% endfor %}</div>
   </div>
@@ -87,7 +92,7 @@
 
 <section class="indices nerd-only" aria-labelledby="idx-h">
   <h2 id="idx-h"><span class="en">Circulation index outlooks</span><span class="ja">循環指数の見通し</span></h2>
-  <p class="lede">Each index is forecast as five equally likely bins (quintiles) after calibration; the dashed line is climatology. The badge leads with the <strong>lift</strong> over the operationally debiased model; cards with no demonstrated improvement are greyed out.</p>
+  <p class="lede">Each index is forecast as five equally likely bins (quintiles) after calibration. The dashed line is climatology. The badge leads with the lift over the operationally debiased model. A card with no demonstrated improvement is greyed out.</p>
   <div class="cards cards-3">
   {% for ix in d.indices %}
     <article class="card idx-card{% if not (ix.skilful['19'] or ix.skilful['26']) %} card-muted{% endif %}">
@@ -102,8 +107,8 @@
           <table class="data-table sr-only"><caption>{{ ix.name }} week {{ 3 if lead == '19' else 4 }} quintile probabilities</caption><tbody><tr>{% for p in ix.quintiles[lead] %}<td>{{ pct(p) }}%</td>{% endfor %}</tr></tbody></table>
         </div>
         {% endfor %}
-        <details class="explainer"><summary>What is this?</summary><p>{{ index_help(ix.key) }}</p>
-          <p class="small muted">Stage {{ ix.stage }} ({{ stage_name(ix.stage) }}). Lift = our calibrated RPSS minus the operationally debiased model's RPSS, 95% block-bootstrap interval; week 3 {{ ix.lift_badge['19'] }}; week 4 {{ ix.lift_badge['26'] }}.</p></details>
+        <details class="explainer"><summary>Definition</summary><p>{{ index_help(ix.key) }}</p>
+          <p class="small muted">Stage {{ ix.stage }} ({{ stage_name(ix.stage) }}). Lift is the calibrated RPSS minus the debiased model's RPSS, with a 95% block-bootstrap interval. Week 3: {{ ix.lift_badge['19'] }}. Week 4: {{ ix.lift_badge['26'] }}.</p></details>
       </div>
     </article>
   {% endfor %}
@@ -118,13 +123,13 @@
       <figure class="card map-card"><figcaption class="card-label">{{ m.title }} · week 3</figcaption><img src="{{ rel }}{{ m.file }}" alt="{{ m.title }} week-3 map: most likely quintile per 1.5-degree cell, shaded by confidence" loading="lazy" width="640" height="400"></figure>
     {% endfor %}
     </div>
-    <p class="muted small">Dashed boxes are the index regions; the solid box is Hokkaido. 1.5° grid over 21–72°N, 75°E–135°W.</p>
+    <p class="muted small">Dashed boxes are the index regions. The solid box is Hokkaido. 1.5° grid, 21–72°N, 75°E–135°W.</p>
   </details>
 </section>
 
 <section class="season nerd-only" aria-labelledby="season-h">
   <h2 id="season-h"><span class="en">Season tracker</span><span class="ja">シーズンの推移</span></h2>
-  <p id="season-desc" class="lede">Observed weekly snow (ERA5 snowfall over western Hokkaido, mm water equivalent) against the climatology band, with the tercile called 3 (▲) and 4 (△) weeks earlier for honest verification.</p>
+  <p id="season-desc" class="lede">Observed weekly snow (ERA5 snowfall over western Hokkaido, mm water equivalent) against the climatology band, with the tercile I called 3 (▲) and 4 (△) weeks earlier. The calls stay on the chart whether or not they verified.</p>
   {{ season_chart(d.season) }}
   <details><summary>Data table</summary><table class="data-table"><thead><tr><th>Week start</th><th>Observed</th><th>Clim 20–80%</th><th>Called at wk3</th><th>Called at wk4</th></tr></thead><tbody>
     {% for w in d.season %}<tr><td>{{ w.start }}</td><td>{{ w.obs }}</td><td>{{ w.clim_lo }}–{{ w.clim_hi }}</td><td>{{ w.fc19 }}</td><td>{{ w.fc26 }}</td></tr>{% endfor %}</tbody></table></details>
@@ -133,10 +138,10 @@
 <section class="nerd nerd-only" aria-labelledby="nerd-h">
   <h2 id="nerd-h"><span class="en">Results, methods and limitations</span><span class="ja">結果・手法・限界</span></h2>
   <p class="lede">{{ d.backtest.note }}</p>
-  <h3>Lift over the model (headline metric)</h3>
+  <h3>Lift over the model is the headline number</h3>
   <table class="data-table"><thead><tr><th>Target</th><th>Model's own skill (debiased, RPSS)</th><th>PBC lift</th><th>95% CI</th><th>Stage-3 lift</th><th>95% CI</th></tr></thead><tbody>
   {% for r in d.backtest.lift %}<tr><td>{{ r.what }}</td><td>{{ r.model_skill|num }}</td><td>{{ r.pbc_lift|num('+') }}</td><td>{{ r.pbc_ci[0]|num('+') }} to {{ r.pbc_ci[1]|num('+') }}</td><td>{{ r.stage3_lift|num('+') }}</td><td>{{ r.stage3_ci[0]|num('+') }} to {{ r.stage3_ci[1]|num('+') }}</td></tr>{% endfor %}</tbody></table>
-  <p class="small muted">Three layers, kept apart: what the dynamical model already knew, what PBC adds, what the ingredient model adds. An interval that spans zero is reported as "no demonstrated improvement".</p>
+  <p class="small muted">Three layers, kept apart: what the dynamical model already knew, what PBC adds, what the ingredient model adds. An interval that spans zero reads "no demonstrated improvement".</p>
   <h3>Index lift by lead</h3>
   <table class="data-table"><thead><tr><th>Index</th><th>Stage</th><th>Week 3 lift (CI)</th><th>Week 3 RPSS</th><th>Week 4 lift (CI)</th><th>Week 4 RPSS</th></tr></thead><tbody>
   {% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ ix.stage }}</td><td>{{ ix.skill['19'].lift.lift|num('+') }} ({{ ix.skill['19'].lift.ci[0]|num('+') }}, {{ ix.skill['19'].lift.ci[1]|num('+') }})</td><td>{{ ix.skill['19'].rpss|num }}</td><td>{{ ix.skill['26'].lift.lift|num('+') }} ({{ ix.skill['26'].lift.ci[0]|num('+') }}, {{ ix.skill['26'].lift.ci[1]|num('+') }})</td><td>{{ ix.skill['26'].rpss|num }}</td></tr>{% endfor %}</tbody></table>
@@ -144,18 +149,18 @@
   <table class="data-table"><thead><tr><th>Condition at issue time</th><th>n weeks</th><th>Snow-week RPSS</th><th>95% CI</th></tr></thead><tbody>
   {% for r in d.backtest.windows %}<tr><td>{{ r.condition }}</td><td>{{ r.n }}</td><td>{{ r.rpss|num }}</td><td>{{ r.ci[0]|num('+') }} to {{ r.ci[1]|num('+') }}</td></tr>{% endfor %}</tbody></table>
   <h3>Sample size and experiments</h3>
-  <p>{{ d.backtest.effective_n.weeks }} DJF weeks in the open test winters, effective sample about {{ d.backtest.effective_n.effective }} after autocorrelation. Experiment log: {{ d.backtest.experiments.n_trials }} configurations evaluated{% if d.backtest.experiments.best is not none %}; best {{ d.backtest.experiments.best|num }}, deflated for selection {{ d.backtest.experiments.deflated|num }}{% endif %}. The last three winters (2023/24–2025/26) are sealed and {% if d.backtest.final_exam %}were evaluated once: {{ d.backtest.final_exam }}{% else %}have not been evaluated yet{% endif %}.</p>
+  <p>{{ d.backtest.effective_n.weeks }} DJF weeks in the open test winters. Effective sample about {{ d.backtest.effective_n.effective }} after autocorrelation. Experiment log: {{ d.backtest.experiments.n_trials }} configurations evaluated{% if d.backtest.experiments.best is not none %}; best {{ d.backtest.experiments.best|num }}, deflated for selection {{ d.backtest.experiments.deflated|num }}{% endif %}. The last three winters (2023/24 to 2025/26) are sealed. {% if d.backtest.final_exam %}I evaluated them once: {{ d.backtest.final_exam }}{% else %}I have not evaluated them yet{% endif %}.</p>
   <h3>Limitations</h3>
   <ul class="small">
-    <li>About ten winters of ~13 DJF weeks each, autocorrelated: intervals are wide and a non-significant lift is reported as no signal.</li>
-    <li>1.5° fields cannot resolve Hokkaido's terrain or the JPCZ; delivery (stage 5) is explained, not forecast.</li>
-    <li>ERA5 snowfall is biased in mountains; SNOW-W is a box average checked against AMeDAS stations, not a resort total.</li>
-    <li>JMA changed system several times in the period and its ensembles are small; ECMWF changed cycle in 2023, 2024 and 2026.</li>
+    <li>About ten winters of 13 DJF weeks each, autocorrelated. Intervals are wide. A non-significant lift reads as no signal.</li>
+    <li>1.5° fields cannot resolve Hokkaido's terrain or the JPCZ. Delivery (stage 5) is explained, not forecast.</li>
+    <li>ERA5 snowfall is biased in mountains. SNOW-W is a box average checked against AMeDAS stations, not a resort total.</li>
+    <li>JMA changed system several times in the period and its ensembles are small. ECMWF changed cycle in 2023, 2024 and 2026.</li>
   </ul>
   <h3>Reproducibility</h3>
-  <p class="small">Commit <code>{{ d.repro.commit }}</code>, state version <code>{{ d.repro.state_version }}</code>. One command: <code>{{ d.repro.command }}</code>. Methods in full: <a href="{{ rel }}method.html">method page</a> and <code>docs/METHOD.md</code>, <code>docs/BACKTEST.md</code>.</p>
+  <p class="small">Commit <code>{{ d.repro.commit }}</code>, state version <code>{{ d.repro.state_version }}</code>. One command: <code>{{ d.repro.command }}</code>. Method in full: <a href="{{ rel }}method.html">method page</a>, <code>docs/METHOD.md</code>, <code>docs/BACKTEST.md</code>.</p>
   <h3>References</h3>
   {% if d.references %}<ol class="small refs">{% for r in d.references %}<li id="ref-{{ r.key }}">{{ r.text }}{% if r.doi %} <a href="https://doi.org/{{ r.doi }}">doi:{{ r.doi }}</a>{% endif %}</li>{% endfor %}</ol>
-  {% else %}<p class="small muted">The reference list is built from <code>references.bib</code> once every entry has passed the checks in <code>docs/REFERENCES_CHECK.md</code>; unverified references never appear here.</p>{% endif %}
+  {% else %}<p class="small muted">The reference list is built from <code>references.bib</code> once every entry has passed the checks in <code>docs/REFERENCES_CHECK.md</code>. An unverified reference never appears here.</p>{% endif %}
 </section>
 {% endblock %}

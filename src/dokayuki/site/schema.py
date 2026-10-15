@@ -1,4 +1,4 @@
-"""Forecast JSON (latest.json) helpers: signal grades, plain-English lines, headline guarded by skill."""
+"""Forecast JSON (latest.json) helpers: signal grades, plain lines in the house voice, headline guarded by skill."""
 from __future__ import annotations
 
 
@@ -33,27 +33,27 @@ def signal_grade(terciles: dict, skilful: bool, rpss: float | None) -> str:
 
 def week_line(terciles: dict, big: float, grade: str, skilful: bool) -> str:
     if not skilful:
-        return "The snow model isn't skilful enough yet to call this week; read the circulation indices instead."
+        return "No snow call: the snow model has no backtest skill yet. Read the indices instead."
     a, b = terciles["above"], terciles["below"]
     if grade == "No signal":
-        return "No real lean either way: about the usual odds of snow for this time of year."
+        return "No lean either way. The usual odds for the time of year."
     if a > b:
         if grade == "Strong":
-            return "Looks like a decent chance of a big week on the Sea of Japan side."
+            return "A fair chance of a big week on the Sea of Japan side."
         if grade == "Moderate":
-            return "Leaning snowier than normal on the Sea of Japan side."
-        return "A slight lean towards a snowier week than normal."
+            return "Leans snowier than normal on the Sea of Japan side."
+        return "A slight lean to snowier than normal."
     if grade == "Strong":
-        return "Looks like a lean week: odds favour below-normal snow."
+        return "A lean week. The odds favour below-normal snow."
     if grade == "Moderate":
-        return "Leaning drier than normal for the Sea of Japan side."
-    return "A slight lean towards a quieter week than normal."
+        return "Leans drier than normal on the Sea of Japan side."
+    return "A slight lean to quieter than normal."
 
 
 def index_line(key: str, q: list[float], skilful: bool) -> str:
     name, up, down = INDEX_PLAIN.get(key, (key, "higher than normal", "lower than normal"))
     if not skilful:
-        return f"{name}: not skilful yet at this lead."
+        return f"{name}: no skill at this lead."
     top2, bot2 = q[3] + q[4], q[0] + q[1]
     if top2 >= 0.5:
         return f"{name} {up} likely."
@@ -65,19 +65,19 @@ def index_line(key: str, q: list[float], skilful: bool) -> str:
 def headline(d: dict) -> str:
     sm = d["snow_model"]
     if d.get("stale"):
-        return f"Outlook is stale (data behind since {d.get('stale_since')}); showing the last good run."
+        return f"Stale. No new data since {d.get('stale_since')}; this is the last good run."
     if not sm["skilful"]:
-        return "The snow mapping isn't proven skilful yet, so no snow call: here's what the circulation indices say."
+        return "No snow call yet. The snow mapping has no proven skill, so the indices carry the page."
     w3, w4 = d["weeks"][0], d["weeks"][1]
     g3, g4 = w3["grade"], w4["grade"]
     if g3 in ("Strong", "Moderate") and w3["terciles"]["above"] > w3["terciles"]["below"]:
         tail = " and the following week looks similar" if g4 in ("Strong", "Moderate") and w4["terciles"]["above"] > w4["terciles"]["below"] else ""
-        return f"Week 3 is leaning snowier than normal on the Sea of Japan side{tail}."
+        return f"Week 3 leans snowier than normal on the Sea of Japan side{tail}."
     if g3 in ("Strong", "Moderate") and w3["terciles"]["above"] < w3["terciles"]["below"]:
-        return "Week 3 is leaning quieter than normal; no big-week signal yet."
+        return "Week 3 leans quieter than normal. No big-week signal yet."
     if g4 in ("Strong", "Moderate") and w4["terciles"]["above"] > w4["terciles"]["below"]:
-        return "Nothing clear for week 3, but week 4 is leaning snowier than normal."
-    return "No strong signal either way: expect roughly normal odds of snow for the season."
+        return "Nothing clear for week 3. Week 4 leans snowier than normal."
+    return "No signal either way. Normal odds for the season."
 
 
 STAGES = {1: "Trigger", 2: "Outbreak", 3: "Steering", 4: "Fuel", 5: "Delivery"}
@@ -96,7 +96,7 @@ def stage_state(score: float) -> str:
 def lift_badge(lift: dict | None) -> str:
     """Spec update 1: badges lead with the lift over the operationally debiased model."""
     if not lift or lift.get("lift") is None:
-        return "No proven skill yet"
+        return "No skill shown yet"
     if not lift.get("significant"):
         return "No demonstrated improvement over the raw model"
     sign = "+" if lift["lift"] >= 0 else ""

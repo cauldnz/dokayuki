@@ -1,15 +1,15 @@
 {% extends "base.html.j2" %}
 {% block content %}
 <article class="prose">
-<h1>How this outlook is made, and how much to trust it</h1>
-<p class="lede">Snow three or four weeks out is close to unpredictable on its own. The large-scale ingredients that make it snow on the Sea of Japan side, a strong Siberian High, a tight pressure gradient across Japan, cold air and an unstable sea, are a little more predictable. So we forecast those, calibrate them, and only then map them to snow.</p>
-<figure class="pipeline">{{ pipeline_svg() }}<figcaption>ECMWF and JMA ensembles → per-member indices → Probabilistic Bias Correction → calibrated index odds (+ things we can see now) → snow-week odds.</figcaption></figure>
-<h2>The method in plain English</h2>
+<h1>Snow a month out is nearly unpredictable. The ingredients are less so.</h1>
+<p class="lede">I do not forecast snow three or four weeks out directly. I forecast the large-scale ingredients that make it snow on the Sea of Japan side (a strong Siberian High, a tight pressure gradient across Japan, cold air aloft, an unstable sea), calibrate those, and only then map them to snow. The claim is small: a published method applied carefully. No new physics.</p>
+<figure class="pipeline">{{ pipeline_svg() }}<figcaption>ECMWF and JMA ensembles → per-member indices → Probabilistic Bias Correction → calibrated index odds (+ what I can see now) → snow-week odds.</figcaption></figure>
+<h2>The method in four steps</h2>
 <ol>
-<li><strong>Two models, many members.</strong> We take the ECMWF and JMA subseasonal ensembles and compute, for every member, a handful of circulation indices for weeks 3 and 4.</li>
-<li><strong>Calibration (PBC).</strong> Models have habits. Probabilistic Bias Correction (Guan, Mouatadid et al., 2026, arXiv:2604.16238) learns from 20 years of reforecasts how often "the model said 70 %" really happened, for this time of year, and corrects the odds. It blends a direct correction (Debias++) with a small regression on recent observations (Persistence++).</li>
-<li><strong>Snow mapping.</strong> A small statistical model turns the calibrated index odds, plus what we can already see (Arctic Oscillation, MJO, polar vortex, sea temperature, recent snow), into the odds of a below/near/above-normal snow week and of a big snow week.</li>
-<li><strong>Honesty rule.</strong> The snow call is only shown if it beats climatology and the raw model snowfall in a ten-winter backtest. Otherwise the page says so and shows the indices only.</li>
+<li>Two models, many members. I take the ECMWF and JMA subseasonal ensembles and compute, for every member, a handful of circulation indices for weeks 3 and 4.</li>
+<li>Calibration. Models have habits. Probabilistic Bias Correction{{ cites(("guan2026advancing", "Guan, Mouatadid et al. 2026, arXiv:2604.16238"), ("mouatadid2023adaptive", "Mouatadid et al. 2023")) }} learns from 20 years of reforecasts how often "the model said 70 %" happened, for this time of year, and corrects the odds. It blends a direct correction (Debias++) with a small regression on recent observations (Persistence++).</li>
+<li>Snow mapping. A small statistical model turns the calibrated index odds, plus what is already visible (Arctic Oscillation, MJO, polar vortex, sea temperature, recent snow), into the odds of a below, near or above-normal snow week and of a big snow week.</li>
+<li>The gate. The snow call is shown only if it beats climatology and the raw model snowfall in a ten-winter backtest. Otherwise the page says so and shows the indices alone.</li>
 </ol>
 <h2>Backtest</h2>
 <p class="muted">{{ d.backtest.note }}</p>
@@ -18,13 +18,16 @@
 <table class="data-table"><thead><tr><th>Index</th><th>RPSS week 3</th><th>RPSS week 4</th></tr></thead><tbody>
 {% for ix in d.indices %}<tr><td>{{ ix.name }}</td><td>{{ ix.skill['19'].rpss|num }}</td><td>{{ ix.skill['26'].rpss|num }}</td></tr>{% endfor %}</tbody></table>
 <p>Full tables, reliability diagrams and the windows-of-opportunity analysis: <code>docs/BACKTEST.md</code> in the repository.</p>
-<h2>Limitations</h2>
+<h2>Limits</h2>
 <ul>
-<li>Skill at weeks 3–4 is small even when real: expect RPSS of a few hundredths. A "Strong" grade means the odds moved a lot <em>and</em> the backtest says that movement is worth something, not that snow is guaranteed.</li>
-<li>Probabilities are rounded to 5 %. We never publish a centimetre number for a week a month away.</li>
-<li>The snow truth is ERA5 snowfall over a western-Hokkaido box, checked against AMeDAS stations (Kutchan, Sapporo, Otaru, Asahikawa). Niseko has no snow-reporting station.</li>
-<li>This is a personal, non-commercial research project and <strong>not</strong> an avalanche or mountain weather forecast.</li>
+<li>Skill at weeks 3 and 4 is small when it is real. Expect RPSS of a few hundredths. A "Strong" grade means the odds moved a lot and the backtest says that movement is worth something. It does not mean snow.</li>
+<li>Probabilities are rounded to 5 %. I never publish a centimetre number for a week a month away.</li>
+<li>The snow truth is ERA5 snowfall over a western-Hokkaido box, checked against AMeDAS stations (Kutchan, Rankoshi, Sapporo, Otaru, Asahikawa). Niseko has no snow-reporting station.</li>
+<li>This is a personal, non-commercial research project. It is not an avalanche or mountain weather forecast.</li>
 </ul>
+<h2>References</h2>
+{% if d.references %}<ol class="small refs">{% for r in d.references %}<li id="mref-{{ r.key }}">{{ r.text }}{% if r.doi %} <a href="https://doi.org/{{ r.doi }}">doi:{{ r.doi }}</a>{% endif %}</li>{% endfor %}</ol>
+{% else %}<p class="small muted">The reference list is built from <code>references.bib</code> once every entry has passed the checks in <code>docs/REFERENCES_CHECK.md</code>.</p>{% endif %}
 <h2>Attribution</h2>
 <ul>{% for a in site.attribution %}<li>{{ a }}</li>{% endfor %}</ul>
 </article>

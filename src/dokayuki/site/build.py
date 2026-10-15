@@ -6,7 +6,7 @@ import shutil
 from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from markupsafe import Markup
+from markupsafe import Markup, escape
 
 from ..config import ROOT, load_indices, load_stage_names, load_yaml
 from . import charts
@@ -113,9 +113,29 @@ def make_env() -> Environment:
     return env
 
 
+def make_cite(references: list[dict]):
+    """cite(key, label) -> linked author-year if the key is a verified reference, else '' (never on the site).
+    cites(*pairs) joins the non-empty ones with '; ' for a parenthetical list."""
+    by_key = {r["key"]: r for r in references or []}
+
+    def cite(key: str, label: str) -> Markup:
+        r = by_key.get(key)
+        if not r:
+            return Markup("")
+        if r.get("doi"):
+            return Markup(f'<a class="cite" href="https://doi.org/{escape(r["doi"])}">{escape(label)}</a>')
+        return Markup(f'<span class="cite">{escape(label)}</span>')
+
+    def cites(*pairs) -> Markup:
+        parts = [c for c in (cite(k, lab) for k, lab in pairs) if c]
+        return Markup(" (" + "; ".join(parts) + ")") if parts else Markup("")
+    return cite, cites
+
+
 def build(forecast: dict, out: Path, site_cfg: dict | None = None, archive: list[dict] | None = None) -> Path:
     site = site_cfg or load_yaml("site")
     env = make_env()
+    env.globals["cite"], env.globals["cites"] = make_cite(forecast.get("references", []))
     out.mkdir(parents=True, exist_ok=True)
     for m in forecast.get("maps", []):
         m["file"] = env.globals["map_file"](m, out)
