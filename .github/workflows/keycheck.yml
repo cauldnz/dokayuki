@@ -1,0 +1,17 @@
+# Manual: proves the ECMWF_API_KEY secret reaches a workflow and authenticates against both
+# ECMWF data stores. No data is retrieved; it only lists the account's jobs.
+name: keycheck
+on: { workflow_dispatch: }
+permissions: { contents: read }
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      ECMWF_API_KEY: ${{ secrets.ECMWF_API_KEY }}
+    steps:
+      - run: |
+          test -n "$ECMWF_API_KEY" || { echo "secret ECMWF_API_KEY is empty"; exit 1; }
+          for u in https://ecds.ecmwf.int/api https://cds.climate.copernicus.eu/api; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" -H "PRIVATE-TOKEN: $ECMWF_API_KEY" "$u/retrieve/v1/jobs?limit=1")
+            echo "$u -> HTTP $code"; test "$code" = 200 || exit 1
+          done
