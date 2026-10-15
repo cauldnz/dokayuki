@@ -29,6 +29,7 @@ jobs:
             latest)    .venv/bin/python scripts/build_site.py --forecast state/latest.json --out site/build/publish ;;
           esac
       - uses: actions/configure-pages@v5
+        continue-on-error: true      # creating the site needs admin rights the token lacks; harmless once Pages is on
         with: { enablement: true }
       - uses: actions/upload-pages-artifact@v3
         with: { path: site/build/publish }

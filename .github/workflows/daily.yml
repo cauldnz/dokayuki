@@ -36,6 +36,7 @@ jobs:
         with: { name: site, path: site/build/latest }
       - uses: actions/configure-pages@v5
         if: vars.DOKAYUKI_PUBLISH == 'true'
+        continue-on-error: true
         with: { enablement: true }
       - uses: actions/upload-pages-artifact@v3
         if: vars.DOKAYUKI_PUBLISH == 'true'
