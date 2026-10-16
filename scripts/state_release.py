@@ -1,5 +1,8 @@
 """Publish and fetch state/ as versioned GitHub Release assets (chunks <= 1.9 GB).
 
+Raw GRIB (state/grib/) is excluded: it is kept locally for reprocessing but is too large,
+and not derived state, to publish.
+
 Usage: state_release.py download | upload [--keep N]
 Needs GITHUB_TOKEN and GITHUB_REPOSITORY (set in Actions); locally pass --repo owner/name.
 """
@@ -31,7 +34,8 @@ def pack() -> list[Path]:
     tar = out / "state.tar"
     with tarfile.open(tar, "w") as t:
         for p in sorted(STATE.rglob("*")):
-            if p.is_file() and p.name != "README.md" and "requests.json" not in p.name:
+            if (p.is_file() and p.name != "README.md" and "requests.json" not in p.name
+                    and "grib" not in p.relative_to(STATE).parts):
                 t.add(p, arcname=str(p.relative_to(STATE)))
     parts = []
     with open(tar, "rb") as fh:
