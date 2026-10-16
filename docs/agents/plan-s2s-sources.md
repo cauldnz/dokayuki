@@ -56,7 +56,10 @@ source for the backtest.
    indices should agree to rounding. That is the test that lets us trust the switch.
 3. Run with a thread pool over inits, Oct–Apr 2016/17 to 2022/23, from the laptop or a cloud
    session (no disk, no credentials, no queue). Then the real backtest.
-4. Stop the ECDS history pull once the parity check passes; keep ECDS for 2023+ and daily runs.
+4. The ECDS history pull keeps running alongside: it is the authoritative copy (control
+   members, no z1000 approximation) and the parity reference. The first PoC backtest and the
+   first published page run on WB2; the ECDS set replaces it month by month as it lands, with
+   the source recorded in each members file.
 
 ## Plan B: the downloader library (`ecmwf-haul`, own repo)
 
@@ -80,7 +83,7 @@ Not in scope for v1: Polytope, CMA mirror, any JMA-specific handling beyond the 
 
 ## Decisions (Chris, 2026-10-17)
 
-- Backtest on WeatherBench2's 50-member forecasts and 10-member reforecasts, no control member.
-  Record `members: perturbed only (WB2)` in METHOD and BACKTEST; the reference PBC code is
-  indifferent to the member count.
+- First PoC backtest on WeatherBench2's 50-member forecasts and 10-member reforecasts, no
+  control member; record `members: perturbed only (WB2)` in METHOD and BACKTEST. The full ECDS
+  pull continues in parallel and takes over as it lands.
 - Library: `ecmwf-haul`, MIT, under cauldnz, after Plan A.
