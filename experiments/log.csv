@@ -15,3 +15,5 @@ date,experiment_id,phase,hypothesis,settings,cv_score,cv_metric,n_trials_so_far,
 2026-10-15,backtest-synthetic-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",0.2352,RPSS_pbc_duet,14,False,synthetic
 2026-10-15,backtest-synthetic-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.2305,RPSS_pbc_duet,15,False,synthetic
 2026-10-15,backtest-synthetic-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",0.2352,RPSS_pbc_duet,16,False,synthetic
+2026-10-16,backtest-synthetic-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.2305,RPSS_pbc_duet,17,False,synthetic
+2026-10-16,backtest-synthetic-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",0.2352,RPSS_pbc_duet,18,False,synthetic

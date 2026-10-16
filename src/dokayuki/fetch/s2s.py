@@ -198,7 +198,12 @@ def fetch(collection: str, req: dict, target: Path, reqlog: RequestLog, client=N
         except Exception as e:  # noqa: BLE001
             log.warning("stale request id %s: %s", rid, e)
     if remote is None:
-        remote = client.submit(collection, req)
+        try:
+            remote = client.submit(collection, req)
+        except Exception as e:  # noqa: BLE001
+            # e.g. HTTP 403 "cost limits exceeded": the part is reported, the job stays incomplete, the run goes on
+            log.error("submit refused for %s %s: %s", collection, {k: req[k] for k in ("origin", "year", "month", "level_type", "variable") if k in req}, e)
+            return None
         reqlog.set(key, remote.request_id)
         log.info("submitted %s -> %s", collection, remote.request_id)
     t0 = time.time()

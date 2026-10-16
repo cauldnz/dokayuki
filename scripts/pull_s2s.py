@@ -54,6 +54,29 @@ def part_name(req: dict) -> str:
     return f"{req['level_type'][:4]}{lev}_{KIND_OF.get(req['variable'][0], 'instant')[:3]}"
 
 
+HYEAR_CHUNK = 10
+
+
+def hyear_chunks(hyears: list[int] | None, size: int = HYEAR_CHUNK) -> list[tuple[list[int] | None, str]]:
+    """[(hindcast years for one request, part-name suffix)]; forecasts (no hyears) are one unchunked part."""
+    if not hyears:
+        return [(None, "")]
+    return [(hyears[i:i + size], f"_h{hyears[i]}-{hyears[min(i + size, len(hyears)) - 1]}") for i in range(0, len(hyears), size)]
+
+
+def join_pieces(arrs: list[xr.DataArray]) -> xr.DataArray:
+    """Join the pieces of one variable: files that share their time axis are different member sets
+    (control and perturbed) and concatenate on ``number``; files with different time axes are
+    hindcast-year chunks (or forecast types that arrived separately) and concatenate on ``time``."""
+    if len(arrs) == 1:
+        return arrs[0]
+    by_time: dict[tuple, list[xr.DataArray]] = {}
+    for a in arrs:
+        by_time.setdefault(tuple(pd.DatetimeIndex(a["time"].values).astype("int64")), []).append(a)
+    groups = [xr.concat(g, dim="number").sortby("number") if len(g) > 1 else g[0] for g in by_time.values()]
+    return groups[0] if len(groups) == 1 else xr.concat(groups, dim="time").sortby("time")
+
+
 def weekly_fields(ds: xr.Dataset, lead: int) -> xr.Dataset:
     out = {}
     for v in ds.data_vars:
@@ -64,8 +87,8 @@ def weekly_fields(ds: xr.Dataset, lead: int) -> xr.Dataset:
 
 def _weekly_parts(parts: dict[str, Path], prefix: str, lead_days) -> dict[int, dict[str, xr.DataArray]]:
     """Open the GRIBs whose part name (after the forecast-type prefix) starts with ``prefix``, reduce
-    each variable to its weekly value per lead at once (float32, in memory), and join control and
-    perturbed members on ``number``. Daily fields are never held for more than one variable, which
+    each variable to its weekly value per lead at once (float32, in memory), and join the pieces
+    (member sets on ``number``, hindcast-year chunks on ``time``). Daily fields are never held for more than one variable, which
     keeps a 220 member-year reforecast month under a gigabyte instead of ten."""
     weekly: dict[int, dict[str, list[xr.DataArray]]] = {lead: {} for lead in lead_days}
     for name, path in parts.items():
@@ -81,7 +104,7 @@ def _weekly_parts(parts: dict[str, Path], prefix: str, lead_days) -> dict[int, d
         ds.close()
     out = {}
     for lead in lead_days:
-        out[lead] = {v: (xr.concat(arrs, dim="number").sortby("number") if len(arrs) > 1 else arrs[0]) for v, arrs in weekly[lead].items()}
+        out[lead] = {v: join_pieces(arrs) for v, arrs in weekly[lead].items()}
     return out
 
 
@@ -148,9 +171,13 @@ def main():
                 hy = list(range(int(y) - 20, int(y))) if (is_rf and origin == "ecmwf") else (list(range(1991, 2021)) if is_rf else None)
                 parts = []   # control and perturbed members in one request (ECDS time is mostly per request)
                 ft = ["control_forecast", "perturbed_forecast"]
-                for req in build_request(origin, init, FIELDS_DOMAIN, cfg.domain, ft, reforecast=is_rf, hyears=hy, days=days):
-                    parts.append((f"both_dom_{part_name(req)}", req))
-                parts += [(f"both_{part}", req) for part, req in hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)]
+                # ECDS refuses a reforecast request over about 10 hindcast years for a multi-variable or
+                # large-area part ("cost limits exceeded"), so hindcast years go in chunks; the decoder
+                # joins the chunks on time
+                for hy_chunk, suffix in hyear_chunks(hy):
+                    for req in build_request(origin, init, FIELDS_DOMAIN, cfg.domain, ft, reforecast=is_rf, hyears=hy_chunk, days=days):
+                        parts.append((f"both_dom_{part_name(req)}{suffix}", req))
+                    parts += [(f"both_{part}{suffix}", req) for part, req in hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy_chunk, days=days)]
                 tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}"
                 jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
     if a.priority_reforecast_end:
@@ -192,7 +219,11 @@ def main():
         for coll, tag, is_rf, parts in todo:
             got = {}
             for part, fut in futures[tag]:
-                path = fut.result()
+                try:
+                    path = fut.result()
+                except Exception as e:  # noqa: BLE001
+                    log.error("%s %s: fetch raised %s", tag, part, e)
+                    path = None
                 if path is not None:
                     got[part] = path
             if len(got) < len(parts):
