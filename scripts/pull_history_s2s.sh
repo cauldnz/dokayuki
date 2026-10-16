@@ -4,18 +4,21 @@
 # GRIB is kept under state/grib/ (gitignored) after decode, in case indices need reprocessing
 # from the raw fields; the decoded state (state/members/) is megabytes per month regardless.
 #
-#   ECMWF_API_KEY=... scripts/pull_history_s2s.sh [origins] [start] [end]
+#   ECMWF_API_KEY=... scripts/pull_history_s2s.sh [origins] [start] [end] [priority_reforecast_end]
 #   defaults: ecmwf 2016-10-01 2023-04-30 (Duet validation winter + the seven open test winters)
+#   priority_reforecast_end (optional): pull reforecast jobs up to this month first, e.g. to get a
+#   couple of winters' reforecasts in front of a build session without waiting for all 49 months.
 #   then:     .venv/bin/python scripts/state_release.py upload   # publish the decoded state for CI
 # Optional: with GITHUB_TOKEN and GITHUB_REPOSITORY set, the decoded state is uploaded as a release
 # after every loop, so progress is visible from anywhere (and nothing is lost if the box dies).
 # Status at any time: scripts/pull_status.py (also logs/status.json).
 set -euo pipefail; cd "$(dirname "$0")/.."
 : "${ECMWF_API_KEY:?set ECMWF_API_KEY (the one key for ECDS and CDS; licences accepted on both)}"
-ORIGINS="${1:-ecmwf}"; START="${2:-2016-10-01}"; END="${3:-2023-04-30}"
+ORIGINS="${1:-ecmwf}"; START="${2:-2016-10-01}"; END="${3:-2023-04-30}"; PRIORITY_RF_END="${4:-}"
+PRIO_ARGS=(); [ -n "$PRIORITY_RF_END" ] && PRIO_ARGS=(--priority-reforecast-end "$PRIORITY_RF_END")
 mkdir -p logs
 while true; do
-  .venv/bin/python scripts/pull_s2s.py --origins "$ORIGINS" --start "$START" --end "$END" --budget-s 86400 2>&1 | tee -a logs/pull_history_s2s.log
+  .venv/bin/python scripts/pull_s2s.py --origins "$ORIGINS" --start "$START" --end "$END" --budget-s 86400 "${PRIO_ARGS[@]}" 2>&1 | tee -a logs/pull_history_s2s.log
   .venv/bin/python scripts/pull_status.py || true
   if [ -n "${GITHUB_TOKEN:-}" ] && [ -n "${GITHUB_REPOSITORY:-}" ]; then
     .venv/bin/python scripts/state_release.py upload --keep 3 || echo "checkpoint upload failed; continuing"

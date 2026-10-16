@@ -15,6 +15,7 @@ Layout under ``state/`` (Zarr/NetCDF for arrays, Parquet/JSON for tables):
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -68,6 +69,9 @@ class State:
         return self.root / "members" / origin / str(lead) / f"{kind}.nc"
 
     def write_members(self, origin: str, lead: int, kind: str, da: xr.DataArray) -> Path:
+        """Atomic write (temp file + rename): a concurrent reader of ``p`` (e.g. another script's
+        read_members, or this process's own next read) always sees either the old complete file
+        or the new one, never a truncated write-in-progress."""
         p = self.members_path(origin, lead, kind)
         p.parent.mkdir(parents=True, exist_ok=True)
         if p.exists():
@@ -75,7 +79,9 @@ class State:
                 old = f.load()
             da = xr.concat([old, da], dim="issue")
             da = da.isel(issue=~pd.Index(da["issue"].values).duplicated(keep="last")).sortby("issue")
-        da.to_netcdf(p)
+        tmp = p.with_suffix(f".{os.getpid()}.tmp")
+        da.to_netcdf(tmp)
+        tmp.replace(p)
         return p
 
     def read_members(self, origin: str, lead: int, kind: str) -> xr.DataArray | None:

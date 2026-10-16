@@ -122,6 +122,8 @@ def main():
     p.add_argument("--dry-run", action="store_true"); p.add_argument("--months", default="10,11,12,1,2,3,4")
     p.add_argument("--no-reforecasts", action="store_true"); p.add_argument("--delete-grib", action="store_true")
     p.add_argument("--parallel", type=int, default=4, help="requests in flight at once on ECDS")
+    p.add_argument("--priority-reforecast-end", default=None,
+                    help="pull reforecast jobs with init month <= this date first, ahead of the rest of the queue")
     a = p.parse_args(); logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     cfg, defs = RegionConfig.load(), load_indices()
     months = {int(m) for m in a.months.split(",")}
@@ -151,6 +153,15 @@ def main():
                 parts += [(f"both_{part}", req) for part, req in hemi_requests(origin, init, ft, reforecast=is_rf, hyears=hy, days=days)]
                 tag = f"{origin}_{coll[4:6]}_{y}{int(m):02d}"
                 jobs.append((coll, tag, is_rf, [(part, req, RAW / origin / f"{tag}_{part}.grib") for part, req in parts]))
+    if a.priority_reforecast_end:
+        cutoff = pd.Timestamp(a.priority_reforecast_end)
+
+        def prio(job: tuple) -> int:
+            _coll, tag, is_rf, _parts = job
+            ym = tag[-6:]
+            return 0 if (is_rf and pd.Timestamp(int(ym[:4]), int(ym[4:]), 1) <= cutoff) else 1
+
+        jobs.sort(key=prio)   # stable: priority reforecasts keep their chronological order, so does the rest
     todo = jobs   # fetch() returns at once for a GRIB already on disk, so a job with every part present only decodes
     n_req = sum(len(j[3]) for j in jobs)
     n_fetch = sum(1 for j in jobs for _, _, t in j[3] if not t.exists())
