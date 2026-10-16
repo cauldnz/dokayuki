@@ -78,9 +78,9 @@ Scope, in priority order:
 
 Not in scope for v1: Polytope, CMA mirror, any JMA-specific handling beyond the ECDS backend.
 
-## Open questions for Chris
+## Decisions (Chris, 2026-10-17)
 
-- WB2's extended-range set has no control member: accept 50/10 member ensembles for the
-  backtest (the reference PBC code works on whatever members exist), or add the control from
-  ECDS later? Recommendation: accept.
-- Library name and licence: `ecmwf-haul`, MIT, under cauldnz.
+- Backtest on WeatherBench2's 50-member forecasts and 10-member reforecasts, no control member.
+  Record `members: perturbed only (WB2)` in METHOD and BACKTEST; the reference PBC code is
+  indifferent to the member count.
+- Library: `ecmwf-haul`, MIT, under cauldnz, after Plan A.
