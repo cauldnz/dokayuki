@@ -21,7 +21,7 @@ from .experiments import assert_not_locked
 from .pbc import pbc_from_components
 from .persistpp import persistpp
 from .project import project_cdf
-from .score import lift, rps, rpss
+from .score import MIN_BLOCKS, lift, rps, rpss
 from .thresholds import indicators, model_thresholds, observed_thresholds
 from .validate import implausible_skill
 from .weekly import season_of
@@ -119,6 +119,11 @@ def write_backtest_md(results: list[IndexResult], duet_results: list[IndexResult
         lines.append(f"| {r.source} | {r.target} | {r.lead} | {r.n_weeks} | {r.rpss.get('debiased', float('nan')):.3f} | {r.rpss.get('raw', float('nan')):.3f} | "
                      f"{r.rpss.get('pbc', float('nan')):.3f} | **{L.get('lift', float('nan')):+.3f}** | {L.get('ci', (float('nan'), float('nan')))[0]:+.3f} to {L.get('ci', (float('nan'), float('nan')))[1]:+.3f} | "
                      f"{'yes' if L.get('significant') else 'no'} | {d.get('lift', float('nan')):+.3f} | {p.get('lift', float('nan')):+.3f} | {'IMPLAUSIBLE: investigate leak' if r.implausible else ''} |")
+    few = sorted({r.lifts["pbc"]["n_blocks"] for r in results + duet_results if r.lifts.get("pbc", {}).get("insufficient_blocks")})
+    if few:
+        lines += ["", f"**Too few winters to judge.** Only {', '.join(map(str, few))} test winter(s) are scored so far; the bootstrap "
+                  f"resamples whole winters and needs at least {MIN_BLOCKS}. Intervals are shown for completeness and no lift "
+                  "is marked significant. This table fills in as the S2S history lands."]
     lines += ["", "Snow-week (Stage 3) and windows-of-opportunity tables are added once SNOW-W truth exists (needs the CDS key).", ""]
     path.write_text("\n".join(lines))
 
@@ -132,6 +137,7 @@ def summarise_for_site(results: list[IndexResult], prefer_source: str = "duet") 
         L = r.lifts.get("pbc")
         out.setdefault(r.target, {})[r.lead] = {"rpss": r.rpss.get("pbc"), "ci": list(L["ci"]) if L else None,
                                                 "lift": {"lift": L["lift"], "ci": list(L["ci"]), "significant": L["significant"],
+                                                         "n_blocks": L.get("n_blocks"), "insufficient_blocks": L.get("insufficient_blocks", False),
                                                          "skill_pbc": L["skill_model"], "skill_debiased": L["skill_ref"],
                                                          "skill_raw": r.rpss.get("raw")} if L else None}
     return out

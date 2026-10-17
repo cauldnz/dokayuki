@@ -17,3 +17,17 @@ date,experiment_id,phase,hypothesis,settings,cv_score,cv_metric,n_trials_so_far,
 2026-10-15,backtest-synthetic-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",0.2352,RPSS_pbc_duet,16,False,synthetic
 2026-10-16,backtest-synthetic-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.2305,RPSS_pbc_duet,17,False,synthetic
 2026-10-16,backtest-synthetic-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",0.2352,RPSS_pbc_duet,18,False,synthetic
+2026-10-17,backtest-real-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.0543,RPSS_pbc_ecmwf,19,False,"real; winters ['2017/18', '2018/19']; targets [np.str_('SHI'), np.str_('ALI'), np.str_('MOI'), np.str_('MOI_box'), np.str_('SJC'), np.str_('EAT')]"
+2026-10-17,backtest-real-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",-0.0275,RPSS_pbc_ecmwf,20,False,"real; winters ['2017/18', '2018/19']; targets [np.str_('SHI'), np.str_('ALI'), np.str_('MOI'), np.str_('MOI_box'), np.str_('SJC'), np.str_('EAT')]"
+2026-10-17,backtest-synthetic-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.2305,RPSS_pbc_duet,21,False,synthetic
+2026-10-17,backtest-synthetic-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",0.2352,RPSS_pbc_duet,22,False,synthetic
+2026-10-17,backtest-real-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.0543,RPSS_pbc_ecmwf,23,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-real-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",-0.0275,RPSS_pbc_ecmwf,24,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-real-lead19,phase3,driver exercise,"{'n_after': 4, 'lead': 19}",0.0566,RPSS_pbc_ecmwf,25,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-real-lead26,phase3,driver exercise,"{'n_after': 4, 'lead': 26}",-0.0089,RPSS_pbc_ecmwf,26,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-real-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.0543,RPSS_pbc_ecmwf,27,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-real-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",-0.0275,RPSS_pbc_ecmwf,28,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-real-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.0543,RPSS_pbc_ecmwf,29,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-real-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",-0.0275,RPSS_pbc_ecmwf,30,False,"real; winters ['2017/18', '2018/19']; targets ['SHI', 'ALI', 'MOI', 'MOI_box', 'SJC', 'EAT']"
+2026-10-17,backtest-synthetic-lead19,phase3,driver exercise,"{'n_after': 0, 'lead': 19}",0.2305,RPSS_pbc_duet,31,False,synthetic
+2026-10-17,backtest-synthetic-lead26,phase3,driver exercise,"{'n_after': 0, 'lead': 26}",0.2352,RPSS_pbc_duet,32,False,synthetic

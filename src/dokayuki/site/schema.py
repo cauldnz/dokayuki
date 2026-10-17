@@ -1,6 +1,8 @@
 """Forecast JSON (latest.json) helpers: signal grades, plain lines in the house voice, headline guarded by skill."""
 from __future__ import annotations
 
+from ..score import MIN_BLOCKS
+
 
 INDEX_PLAIN = {
     "SHI": ("Siberian High", "stronger than normal", "weaker than normal"),
@@ -97,6 +99,8 @@ def lift_badge(lift: dict | None) -> str:
     """Spec update 1: badges lead with the lift over the operationally debiased model."""
     if not lift or lift.get("lift") is None:
         return "No skill shown yet"
+    if lift.get("insufficient_blocks"):
+        return f"Too few winters to judge ({lift.get('n_blocks', 0)} scored; {MIN_BLOCKS} needed)"
     if not lift.get("significant"):
         return "No demonstrated improvement over the raw model"
     sign = "+" if lift["lift"] >= 0 else ""

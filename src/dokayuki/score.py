@@ -74,6 +74,8 @@ def block_bootstrap_ci(score_model: pd.Series, score_ref: pd.Series, n_boot: int
                        alpha: float = 0.05, seed: int = 0, block: str = "season") -> tuple[float, float, float]:
     """CI of the skill score 1 - mean(model)/mean(ref), resampling whole winters (blocks)."""
     df = pd.DataFrame({"m": score_model, "r": score_ref}).dropna()
+    if df.empty:
+        return float("nan"), float("nan"), float("nan")
     if block == "season":
         df["blk"] = [season_of(t) for t in df.index]
     else:
@@ -92,15 +94,24 @@ def block_bootstrap_ci(score_model: pd.Series, score_ref: pd.Series, n_boot: int
 
 
 # ----------------------------------------------------------------------------- spec update 1: lift and effective N
+MIN_BLOCKS = 4   # fewer winters than this and a bootstrap over winters cannot speak: never "significant"
+
+
 def lift(score_model: pd.Series, score_ref: pd.Series, score_clim: pd.Series, n_boot: int = 2000,
-         alpha: float = 0.05, seed: int = 0, block: str = "season") -> dict:
+         alpha: float = 0.05, seed: int = 0, block: str = "season", min_blocks: int = MIN_BLOCKS) -> dict:
     """Lift = skill(model) - skill(ref), both relative to climatology, with a block-bootstrap CI.
 
     Skill = 1 - mean(score)/mean(score_clim). Resamples whole winters jointly for model, ref and
     climatology so the paired difference is honest. Returns point estimate, CI, p (two-sided,
-    bootstrap), and the two absolute skills.
+    bootstrap), and the two absolute skills. With fewer than ``min_blocks`` winters the interval is
+    still reported but ``significant`` is False and ``insufficient_blocks`` is True: resampling two
+    winters gives an interval that only reflects those two.
     """
     df = pd.DataFrame({"m": score_model, "r": score_ref, "c": score_clim}).dropna()
+    if df.empty:   # e.g. a reference method with no valid rows (model thresholds unavailable at this setting)
+        nan = float("nan")
+        return {"skill_model": nan, "skill_ref": nan, "lift": nan, "ci": (nan, nan), "p_boot": nan,
+                "n_weeks": 0, "n_blocks": 0, "significant": False, "insufficient_blocks": True}
     df["blk"] = [season_of(t) for t in df.index] if block == "season" else df.index.year
     groups = {k: g for k, g in df.groupby("blk")}
     keys = list(groups)
@@ -116,9 +127,10 @@ def lift(score_model: pd.Series, score_ref: pd.Series, score_clim: pd.Series, n_
     boots = np.asarray(boots)
     lo, hi = np.nanquantile(boots, [alpha / 2, 1 - alpha / 2])
     p = 2 * min((boots <= 0).mean(), (boots >= 0).mean())
+    enough = len(keys) >= min_blocks
     return {"skill_model": float(sm), "skill_ref": float(sr), "lift": float(est), "ci": (float(lo), float(hi)),
             "p_boot": float(p), "n_weeks": int(len(df)), "n_blocks": int(len(keys)),
-            "significant": bool(lo > 0 or hi < 0)}
+            "significant": bool(enough and (lo > 0 or hi < 0)), "insufficient_blocks": not enough}
 
 
 def effective_n(x: pd.Series, max_lag: int = 10) -> float:
