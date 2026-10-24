@@ -50,13 +50,18 @@ def obs_indices():
 @stage("ERA5T weeks (CDS)")
 def era5_update(budget_s):
     import subprocess
-    subprocess.run([sys.executable, str(ROOT / "scripts" / "pull_cds.py"), "--recent", "--budget-s", str(int(budget_s))], check=True)
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "pull_cds.py"), "--recent", "--budget-s", str(int(budget_s))],
+                    check=True, timeout=budget_s + 60)
 
 
 @stage("S2S runs (ECDS)")
 def s2s_update(budget_s):
+    # pull_s2s.py's own --budget-s only bounds new ECDS submissions, not an in-flight decode
+    # (CY48R1's 101-member live inits can take 20-30 min to decode on their own); enforce the
+    # wall-clock limit here too so one slow month can't blow the whole daily run's time budget.
     import subprocess
-    subprocess.run([sys.executable, str(ROOT / "scripts" / "pull_s2s.py"), "--recent", "--budget-s", str(int(budget_s))], check=True)
+    subprocess.run([sys.executable, str(ROOT / "scripts" / "pull_s2s.py"), "--recent", "--budget-s", str(int(budget_s))],
+                    check=True, timeout=budget_s + 60)
 
 
 @stage("refit + forecast")
