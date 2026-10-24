@@ -89,8 +89,11 @@ def main():
     try:
         if not a.offline:
             obs_indices()
-            era5_update(budget * 0.25)
-            s2s_update(budget * 0.5 - (time.time() - t0))
+            for name, update, share in (("ERA5 update", era5_update, 0.25), ("S2S update", s2s_update, 0.5)):
+                try:
+                    update(budget * share - (time.time() - t0))
+                except Exception as e:  # noqa: BLE001
+                    log.warning("%s failed, continuing with existing state: %r", name, e)
         d = refit_and_forecast()
         (STATE / "last_good.json").write_text(json.dumps(d, indent=1, default=str))
         build(d, ROOT / "site" / "build" / "latest")
