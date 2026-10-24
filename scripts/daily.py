@@ -94,7 +94,10 @@ def main():
     try:
         if not a.offline:
             obs_indices()
-            for name, update, share in (("ERA5 update", era5_update, 0.25), ("S2S update", s2s_update, 0.5)):
+            # ERA5 update fails fast on the current CDS cost-limit bug (see pull_cds.py), so it
+            # never needs much of the budget; S2S gets the rest, since a single CY48R1 (101-
+            # member) live month can take 20-30 min to decode on its own.
+            for name, update, share in (("ERA5 update", era5_update, 0.05), ("S2S update", s2s_update, 0.9)):
                 try:
                     update(budget * share - (time.time() - t0))
                 except Exception as e:  # noqa: BLE001

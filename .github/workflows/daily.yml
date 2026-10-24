@@ -12,7 +12,7 @@ env:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
@@ -22,8 +22,17 @@ jobs:
         run: .venv/bin/python scripts/state_release.py download
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Cache in-flight S2S GRIB and ECDS request ids (CY48R1 live decode spans several days)
+        uses: actions/cache@v4
+        with:
+          path: |
+            state/grib
+            state/requests.json
+          key: s2s-live-${{ github.run_id }}
+          restore-keys: |
+            s2s-live-
       - name: Daily run (append new data, refit, forecast, validate, build; stale fallback on failure)
-        run: .venv/bin/python scripts/daily.py --budget-min 30
+        run: .venv/bin/python scripts/daily.py --budget-min 90
       - name: Upload state (new release, keep last 5)
         if: success()
         run: .venv/bin/python scripts/state_release.py upload --keep 5
