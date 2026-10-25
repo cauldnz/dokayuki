@@ -72,7 +72,12 @@ def winters_with_data(fc: xr.DataArray, lead: int, candidates: list[str], min_we
 
 def main():
     p = argparse.ArgumentParser(); p.add_argument("--synthetic", action="store_true"); p.add_argument("--forecast-only", action="store_true")
-    p.add_argument("--n-after", type=int, default=0); a = p.parse_args()
+    p.add_argument("--n-after", type=int, default=0)
+    p.add_argument("--output-root", default=None, help="write docs/BACKTEST.md, state/latest.json and "
+                   "experiments/log.csv under this root instead of the repo root (tests use a tmp_path "
+                   "so a test run never touches the real files)")
+    a = p.parse_args()
+    out_root = Path(a.output_root) if a.output_root else ROOT
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     cfg, snow, defs = RegionConfig.load(), SnowConfig.load(), load_indices()
     K = cfg.K_quintile
@@ -115,8 +120,10 @@ def main():
         headline = duet_results if duet_results else [r for r in results if r.source == "ecmwf"]
         record(f"backtest-{'synthetic' if a.synthetic else 'real'}-lead{lead}", "phase3", "driver exercise", {"n_after": a.n_after, "lead": lead},
                float(np.nanmean([r.rpss['pbc'] for r in headline if r.lead == lead])), "RPSS_pbc_duet" if duet_results else "RPSS_pbc_ecmwf",
-               notes="synthetic" if a.synthetic else f"real; winters {test_winters}; targets {[str(k) for k in keys]}")
-    write_backtest_md(results, duet_results, ROOT / "docs" / "BACKTEST.md", a.synthetic, locked, test_winters, a.n_after)
+               notes="synthetic" if a.synthetic else f"real; winters {test_winters}; targets {[str(k) for k in keys]}",
+               log=out_root / "experiments" / "log.csv")
+    (out_root / "docs").mkdir(parents=True, exist_ok=True)
+    write_backtest_md(results, duet_results, out_root / "docs" / "BACKTEST.md", a.synthetic, locked, test_winters, a.n_after)
     site_skill = summarise_for_site(duet_results if duet_results else results, prefer_source="duet" if duet_results else "ecmwf")
     # a forecast JSON for the last available issue date
     from dokayuki.weekly import forecast_delta
@@ -128,9 +135,10 @@ def main():
                           snow=None, drivers=drivers)
     d["references"] = render_refs(); d["preview"] = a.synthetic
     rep = check_forecast_json(d); rep.raise_if_failed()
-    (ROOT / "state").mkdir(exist_ok=True)
-    (ROOT / "state" / "latest.json").write_text(json.dumps(d, indent=1, default=str))
-    log.info("wrote docs/BACKTEST.md and state/latest.json (%s)", "SYNTHETIC" if a.synthetic else "real")
+    (out_root / "state").mkdir(parents=True, exist_ok=True)
+    (out_root / "state" / "latest.json").write_text(json.dumps(d, indent=1, default=str))
+    log.info("wrote docs/BACKTEST.md and state/latest.json (%s)%s", "SYNTHETIC" if a.synthetic else "real",
+             f" under {out_root}" if out_root != ROOT else "")
     for r in (duet_results or results):
         log.info("%s %s lead %d: n %d, debiased RPSS %.3f, raw %.3f, pbc %.3f, lift %+.3f %s%s", r.source, r.target, r.lead, r.n_weeks,
                  r.rpss.get("debiased", float("nan")), r.rpss.get("raw", float("nan")), r.rpss["pbc"], r.lifts["pbc"]["lift"], r.lifts["pbc"]["ci"],

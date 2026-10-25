@@ -14,11 +14,12 @@ ROOT = Path(__file__).resolve().parents[1]
 
 @pytest.mark.timeout(1500)
 def test_synthetic_backtest_driver(tmp_path):
-    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "run_backtest.py"), "--synthetic"], capture_output=True, text=True, cwd=ROOT)
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "run_backtest.py"), "--synthetic", "--output-root", str(tmp_path)],
+                       capture_output=True, text=True, cwd=ROOT)
     assert r.returncode == 0, r.stderr[-2000:]
-    md = (ROOT / "docs" / "BACKTEST.md").read_text()
+    md = (tmp_path / "docs" / "BACKTEST.md").read_text()
     assert "SYNTHETIC DATA" in md and "2023/24" in md and "lift" in md.lower()
-    d = json.loads((ROOT / "state" / "latest.json").read_text())
+    d = json.loads((tmp_path / "state" / "latest.json").read_text())
     assert check_forecast_json(d).ok and d["preview"] is True
     assert {ix["key"] for ix in d["indices"]} == {"MOI", "SJI", "SHI", "EAT"}
     # sealed winters never appear among scored seasons
