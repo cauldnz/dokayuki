@@ -99,7 +99,9 @@ Container: 4 vCPU, 15 GB RAM, Python 3.13.16, `uv` 0.11.
 | Source | Use | URL | Licence | Lag |
 |---|---|---|---|---|
 | ECMWF extended-range, S2S database on ECDS (`ecmf`) | model fields + on-the-fly reforecasts | https://ecds.ecmwf.int/datasets/s2s-forecasts | CC BY 4.0 (attribution: "Contains modified ECMWF data") | 48 h embargo |
-| JMA (`rjtd`) via S2S database on ECDS | model fields + fixed 1991–2020 hindcasts | same | CC BY-NC 4.0 | 48 h |
+| JMA (`rjtd`) via S2S database on ECDS | model fields; fixed 1991–2020 hindcasts **(retrieval fails, see below)** | same | CC BY-NC 4.0 | 48 h |
+| JMA/MRI-CPS4 one-month hindcast, WMC Tokyo (open directory) | CPS4 reforecast climatology (the S2S 2026-01-31 set): 24 starts/yr, 1991–2020, 13 members, daily means, 1.25° | `https://ds.data.jma.go.jp/wmc/data/gpv/model/1mE_Hind_125.CPS4/Daily/<MMDD>/<YYYY>/` (`src/dokayuki/fetch/wmc.py`, `scripts/pull_wmc_hindcast.py`) | JMA site terms (CC BY 4.0-compatible); JMBSC readme for the same product: data free to use, credit 気象庁提供. Non-commercial use only on our side; see (verify) | static |
+| JMA CPS3 / CPS4 hindcasts via C3S seasonal datasets on CDS (`originating_centre: jma`, `system: 3` / `4`) | CPS3 reforecast climatology for the 2023/24–2025/26 winters: same 24 start dates, 1993–2020 (1991–92 absent), 5 members per start, 12-hourly pressure levels incl. 10 hPa, 6-hourly single levels, 1° | https://cds.climate.copernicus.eu/datasets/seasonal-original-pressure-levels and `…-single-levels` | C3S seasonal licence (free, attribution) | static |
 | WeatherBench2 / ARCO ERA5 1.5° 6-hourly (Google Cloud) | bulk truth history to 2023-01-10 | `https://storage.googleapis.com/weatherbench2/datasets/era5/1959-2023_01_10-6h-240x121_equiangular_with_poles_conservative.zarr` | Copernicus C3S licence (free, attribution) | static (ends 2023-01-10) |
 | CDS ERA5 (daily statistics, pressure levels) | truth after 2023-01-10, snowfall at 0.25°, 10 hPa wind | https://cds.climate.copernicus.eu | C3S licence | ERA5T ~5 days |
 | CDS ERA5 | fallback truth | https://cds.climate.copernicus.eu | C3S licence | ~5 days |
@@ -148,6 +150,37 @@ month)**. JMA fixed sets keyed by system date: 2014-03-04 (hyears 1981–2010), 
 (1981–2012), 2020-03-31 (1981–2010), 2021-03-31 (1981–2020), 2022-03-31 and 2022-09-30
 (1991–2020). **No CPS4 (2026) reforecast set was listed.**
 
+## JMA reforecasts: ECDS failure and the alternatives (probed 2026-10-25)
+
+Every ECDS retrieval from the JMA 2022-09-30 (CPS3) set ends `failed` with an empty log, for
+any valid parameter combination, and the CPS4 set announced on the S2S news page on
+2026-01-28 (model version 2026-01-31) is still absent from the catalogue constraints.
+Re-reading the constraints for the 2022-09-30 tag: only **24** `hmonth`/`hday` pairs are valid
+(16/31 Jan, 10/25 Feb, 12/27 Mar, 11/26 Apr, 16/31 May, 15/30 Jun, 15/30 Jul, 14/29 Aug,
+13/28 Sep, 13/28 Oct, 12/27 Nov, 12/27 Dec; the "43 dates" seen earlier were the union across
+tags) and `time` is **00:00** (every older JMA tag is 12:00). A request outside the constraints
+normally gets an explicit validation error, so the silent failure sits behind the ECDS MARS
+adaptor; the fix is an ECMWF Support Portal ticket (jira.ecmwf.int, Data Stores) with request
+ids, after checking "show error details" on My Requests and trying the MARS-like syntax
+(`class s2, stream enfh, origin rjtd, date 2022-09-30, time 00, hdate 1991-01-16`).
+
+Alternatives found (none needs ECDS):
+
+| Route | What it holds | Verdict |
+|---|---|---|
+| WMC Tokyo open directory `…/1mE_Hind_125.CPS4/Daily/` | CPS4 one-month hindcast: the 24 S2S start dates, 1991–2020, 13 members (control + 6 positive/negative pairs), daily means for days 1–34, 1.25° global, multi-field GRIB2, one file per variable/level (8–22 MiB). msl, tp, t2m, Z/T/u/v (RH on some levels) at 1000–100 hPa. **No 10 hPa, no SST, no snowfall.** Decoded from the container: 442 fields = 13 × 34 for z500, 429 = 13 × 33 for precipitation (no 0–24 h window) | **use for the CPS4 era** (real-time JMA since 2026-01-22). Five fields over 720 start-years ≈ 47 GB, Oct–Mar only ≈ 24 GB (above the 20 GB line; `scripts/pull_wmc_hindcast.py --estimate`). The GEPS2503 hindcast sits beside it but is not the S2S model. `1mE_Hind_125.CPS3` does not exist (CPS3 was never JMA's one-month product); `CPS3_Hind/monthly` holds monthly means only |
+| C3S seasonal datasets on CDS, `originating_centre: jma` | system 3 (CPS3) and system 4 (CPS4) hindcasts on the same 24 start dates, 1993–2020, 5 members per start (C3S multi-system description), leads to 215 d, 12-hourly pressure levels (10…925 hPa) and 6-hourly single levels (msl, t2m, tp, SST, 10 m wind), 1°. Real-time CPS3 daily Jan 2022–Jan 2026 and CPS4 from Mar 2026 are there too | **use for the CPS3 era** (the sealed winters). Same key as ECDS. Not shown byte-identical to the S2S copy, but system, dates, members and years match. Includes 10 hPa, so `U10_60N` is possible |
+| CMA S2S mirror (s2s.cma.cn) | alive; JMA metadata still model version 2014-03-04 (1981–2010); API for S2S Real-time Pilot participants only | dead end |
+| IRI Data Library | all S2S paths behind login; shutting down by end of October 2026; forecast.ccsr has NMME only; IRI's alternate-sources sheet lists no S2S | dead end (one look at `.JMA/.reforecast/` with a login is the only remaining action) |
+| JMBSC (気象業務支援センター) offline media | sells the identical CPS4 one-month reforecast GPV (hd0220, listed 2026-07-16) and a 6-month CPS4 set; no CPS3 one-month product | fallback if the WMC directory closes |
+| TCC/WMC registered GPV, DIAS, Kyoto RISH | NMHS-only, or no CPS hindcasts | not available to us |
+
+Pipeline consequences, recorded so they are not rediscovered: the ECDS JMA fields for msl, z500
+and t850 are 00 UTC instants and the WMC hindcast gives daily means (t2m is a daily mean on
+both); WMC precipitation is a 24-h total in mm (converted to m by the fetcher); the 1.25° grid
+is interpolated bilinearly to the 1.5° lattice. The fetcher stops at daily domain fields under
+`state/wmc_daily/`; the join into `state/members/` is the follow-up.
+
 ## (verify) items
 
 | Item | Status | Finding |
@@ -165,3 +198,7 @@ month)**. JMA fixed sets keyed by system date: 2014-03-04 (hyears 1981–2010), 
 | BoM RMM licence | **resolved** | bom.gov.au/other/copyright.shtml: "Licensed from the Commonwealth of Australia under a Creative Commons Attribution 4.0 International Licence" unless marked otherwise; the RMM text file carries no contrary notice. Attribution line on the site: "MJO RMM index: Australian Bureau of Meteorology (CC BY 4.0)" |
 | ECDS request shape | **resolved** | One request per (origin, collection, month, forecast type, level type and level): ECDS takes a list of init days (and matching `hday`s), so the GRIB carries a `time` axis. Instantaneous fields at plain hours; `total_precipitation` and `snow_fall_water_equivalent` are totals from the start at plain hours (differenced to daily); `2_m_temperature` and `sea_surface_temperature` are 24-h means on `a_b` ranges. Asking for several pressure levels in one request returns every variable at every level, so levels are requested separately. Measured 2026-10-15: ECMWF control, January 2023 (9 inits), all parts: 10 MB, about 1.1 MB per member-init; decode 10 s |
 | ECDS key and S2S licence | **resolved** | Key accepted 2026-10-15; a JMA msl request (one lead, domain box) ran accepted → running → successful in under a minute. The ECDS cost-estimate endpoint returned HTTP 500 repeatedly, so request counts are planned without it |
+| JMA CPS reforecasts from ECDS | **open** | Every request against the 2022-09-30 set fails silently; the 2026-01-31 set is not catalogued (2026-10-25). Next: "show error details", the MARS-like syntax, one request each against the 2017-01-31 JMA tag and the NCEP fixed set to localise it, then a Support Portal ticket. Until then the WMC and CDS routes above carry the climatology |
+| WMC Tokyo hindcast terms | **open** | The hindcast directory is served without a password (real-time `wmc/gpv/…/MGPV_125/` answers 401, `…/Syserr/` 403); the WMC application page covers NMHS-registered real-time GPV and says nothing about hindcasts; the JMBSC readme for the identical product says the numerical data are free to use with the credit 気象庁提供, and JMA's site terms are CC BY 4.0-compatible. Our use is non-commercial research. Send WMC a one-line note stating the use before the first publish that depends on it; credit line on the site: "JMA/MRI-CPS4 hindcast: Japan Meteorological Agency (気象庁提供)" |
+| WMC daily means vs ECDS 00 UTC instants | **open** | The reforecast CDF would come from daily means and the real-time members from 00 UTC instants for msl, z500, t850. Weekly means damp the diurnal difference but it is not zero (t850 over land in winter). Either pull the JMA real-time fields from CDS (6-hourly single levels, 12-hourly pressure levels, so a daily mean can be formed) or quantify the offset on one winter before trusting the PBC lift for JMA |
+| CDS system 3 hindcast = S2S CPS reforecast | **open** | Start dates, years (1993–2020) and 5 members per start match the S2S 2022-09-30 set; grid 1° vs 1.5° and lead axis differ. Confirm on one start date against an ECDS JMA reforecast once ECDS works, or against the WMC CPS4 files for system 4 |
