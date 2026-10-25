@@ -208,17 +208,24 @@ def fetch(collection: str, req: dict, target: Path, reqlog: RequestLog, client=N
         log.info("submitted %s -> %s", collection, remote.request_id)
     t0 = time.time()
     while time.time() - t0 < budget_s:
-        status = remote.status
-        if status in ("successful", "succeeded"):
-            target.parent.mkdir(parents=True, exist_ok=True)
-            remote.download(str(target))
-            return target
-        if status in ("failed", "rejected", "dismissed"):
-            try:
-                detail = remote.json.get("metadata", {}).get("log") or remote.json.get("metadata", {}).get("request", {}).get("ids")
-            except Exception:  # noqa: BLE001
-                detail = ""
-            log.error("request %s %s: %s", remote.request_id, status, detail)
+        try:
+            status = remote.status
+            if status in ("successful", "succeeded"):
+                target.parent.mkdir(parents=True, exist_ok=True)
+                remote.download(str(target))
+                return target
+            if status in ("failed", "rejected", "dismissed"):
+                try:
+                    detail = remote.json.get("metadata", {}).get("log") or remote.json.get("metadata", {}).get("request", {}).get("ids")
+                except Exception:  # noqa: BLE001
+                    detail = ""
+                log.error("request %s %s: %s", remote.request_id, status, detail)
+                reqlog.pop(key)
+                return None
+        except Exception as e:  # noqa: BLE001
+            # e.g. the results expired server-side between poll and download: the stored id is
+            # dead either way, so clear it rather than retrying the same dead id forever.
+            log.warning("request %s errored mid-poll (%s); dropping stale id for a fresh resubmit", key, e)
             reqlog.pop(key)
             return None
         time.sleep(poll_s)

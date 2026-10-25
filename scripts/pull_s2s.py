@@ -14,14 +14,16 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
 from dokayuki.config import RegionConfig, load_indices
 from dokayuki.fetch.s2s import VARIABLES, RequestLog, build_request, ecds_client, fetch, hemi_requests, open_grib_daily
+from dokayuki.grid import area_mean
 from dokayuki.indices import all_indices
 from dokayuki.state import State
-from dokayuki.weekly import weekly_from_member_steps
+from dokayuki.weekly import forecast_delta, weekly_from_member_steps
 
 ROOT = Path(__file__).resolve().parents[1]; STATE = State(ROOT / "state"); RAW = ROOT / "state" / "grib"
 FIELDS_DOMAIN = ["msl", "t2m", "tp", "sf", "sst", "t850", "z500", "u850", "v850"]
@@ -121,7 +123,45 @@ def to_members(idx: xr.DataArray, req: dict, reforecast: bool) -> xr.DataArray:
     return idx.transpose("issue", "hyear", "member", "target")
 
 
-def decode(parts: dict[str, Path], defs, lead_days=(19, 26)) -> dict[int, xr.DataArray]:
+def load_sst_climatology(box, path: Path = Path("state/era5_15_daily.zarr")):
+    """(daily box-mean SST, day-of-year climatology) from the ERA5 WB2 pull, or (None, None) if it
+    isn't there -- SJI is then skipped (``all_indices(..., skip_missing=True)`` already handles sst=None)."""
+    if not path.exists():
+        log.warning("%s not found; SJI will be skipped (needs the ERA5 1.5deg pull)", path)
+        return None, None
+    ds = xr.open_zarr(path)
+    daily = area_mean(ds["sst"], box).load().rename("sst")
+    clim = daily.groupby("time.dayofyear").mean("time").rename("sst_clim_doy")
+    return daily, clim
+
+
+def sst_for_time(t: pd.DatetimeIndex, lead: int, sst_clim) -> xr.DataArray | None:
+    """Persisted-SST series (one scalar per issue, the real calendar date) for one lead's time
+    coordinate; NaN past the ERA5 pull's range rather than silently reusing a stale nearest value.
+
+    Vectorised (numpy, not per-issue ``xr.DataArray.sel``): a reforecast month's ``time`` axis
+    can carry hundreds of entries (one per hindcast year x issue), and xarray's label-based
+    ``.sel`` has enough per-call overhead that a Python loop over it dominated decode time."""
+    daily, clim = sst_clim
+    if daily is None:
+        return None
+    order = np.argsort(daily["time"].values)
+    dates, vals_by_date = daily["time"].values[order], daily.values[order]
+    lo, hi = dates[0], dates[-1]
+    clim_by_doy = np.full(367, np.nan)
+    clim_by_doy[clim["dayofyear"].values.astype(int)] = clim.values
+
+    obs_days = (t - pd.Timedelta(days=7)).values
+    idx = np.clip(np.searchsorted(dates, obs_days), 1, len(dates) - 1)
+    nearest = np.where(np.abs(dates[idx] - obs_days) < np.abs(dates[idx - 1] - obs_days), idx, idx - 1)
+    anom = vals_by_date[nearest] - clim_by_doy[pd.DatetimeIndex(obs_days).dayofyear.values]
+
+    target_doys = np.stack([(t + pd.Timedelta(days=i)).dayofyear.values for i in range(forecast_delta(lead), forecast_delta(lead) + 7)], axis=1)
+    persisted = clim_by_doy[target_doys].mean(axis=1) + anom
+    return xr.DataArray(np.where((obs_days < lo) | (obs_days > hi), np.nan, persisted), dims="time", coords={"time": t})
+
+
+def decode(parts: dict[str, Path], defs, lead_days=(19, 26), sst_clim=(None, None)) -> dict[int, xr.DataArray]:
     """{part: grib path} for one (origin, month), both forecast types -> {lead: DataArray(number, time, target)}."""
     dom = _weekly_parts(parts, "dom", lead_days)
     hemi = {k: _weekly_parts(parts, k, lead_days) for k in ("ao", "ural", "u10")}
@@ -129,7 +169,11 @@ def decode(parts: dict[str, Path], defs, lead_days=(19, 26)) -> dict[int, xr.Dat
     for lead in lead_days:
         pieces = []
         if dom[lead]:
-            pieces.append(all_indices({k: v for k, v in defs.items() if k not in STAGE1}, dom[lead], skip_missing=True))
+            t = pd.DatetimeIndex(next(iter(dom[lead].values()))["time"].values)
+            sst = sst_for_time(t, lead, sst_clim)
+            aux = {"v850": dom[lead]["v850"]} if "v850" in dom[lead] else {}
+            pieces.append(all_indices({k: v for k, v in defs.items() if k not in STAGE1}, dom[lead],
+                                       sst=sst, skip_missing=True, aux=aux))
         hf = {}
         for k in hemi:
             hf.update(hemi[k][lead])
@@ -147,8 +191,13 @@ def main():
     p.add_argument("--parallel", type=int, default=4, help="requests in flight at once on ECDS")
     p.add_argument("--priority-reforecast-end", default=None,
                     help="pull reforecast jobs with init month <= this date first, ahead of the rest of the queue")
+    p.add_argument("--redecode", action="store_true",
+                    help="reprocess dates already in state/members/ too (e.g. a new target was added to "
+                         "config/indices.yaml); fetch() still returns at once for GRIB already on disk, "
+                         "so this is a local re-decode, not a re-pull")
     a = p.parse_args(); logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
     cfg, defs = RegionConfig.load(), load_indices()
+    sst_clim = load_sst_climatology(defs["SJI"].box)
     months = {int(m) for m in a.months.split(",")}
     end = pd.Timestamp(a.end) if a.end else pd.Timestamp.now("UTC").tz_localize(None).normalize() - pd.Timedelta(days=2)
     start = end - pd.Timedelta(days=10) if a.recent else pd.Timestamp(a.start)
@@ -162,7 +211,7 @@ def main():
             dates = init_dates(coll, origin)
             dates = dates[(dates >= start) & (dates <= end) & dates.month.isin(sorted(months))]
             have = STATE.read_members(origin, 19, "reforecast_idx" if is_rf else "forecast_idx")
-            done = set(pd.DatetimeIndex(have["issue"].values)) if have is not None else set()
+            done = set() if a.redecode else (set(pd.DatetimeIndex(have["issue"].values)) if have is not None else set())
             for (y, m), grp in dates.to_series().groupby([dates.year, dates.month]):
                 days = sorted({d.day for d in grp if d not in done})   # already decoded dates are not re-pulled
                 if not days:
@@ -232,7 +281,7 @@ def main():
             size_mb = sum(p.stat().st_size for p in got.values()) / 1e6
             t1 = time.time()
             try:
-                dec = decode(got, defs)
+                dec = decode(got, defs, sst_clim=sst_clim)
             except Exception as e:  # noqa: BLE001
                 log.exception("%s: decode failed (%s); GRIB kept for a rerun", tag, e)
                 continue
