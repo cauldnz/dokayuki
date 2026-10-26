@@ -112,6 +112,27 @@ def requests_for(fields: list[str], years: list[int], mmdds: list[str], system: 
     return out
 
 
+def download(dataset: str, req: dict, target: Path, client=None) -> Path:
+    """Submit and block on one CDS seasonal request, atomic write. Skipped when ``target``
+    already exists and is non-empty. Unlike ECDS, this client has no submit/poll/download split
+    (``cdsapi``'s legacy client's ``retrieve`` does all three and blocks until done) -- measured
+    2026-10-26: ~2.5 h for one field/start-date/31-years request, of which the actual transfer
+    (190 MB) was under 10 min, so the wait is server-side queueing, not bandwidth. Call this from
+    a thread pool (one client per thread; the client itself isn't documented as thread-safe) to
+    let CDS process several requests concurrently -- submitting serially would take the full
+    84-request pull the better part of a week."""
+    if target.exists() and target.stat().st_size > 0:
+        return target
+    from .era5 import cds_client
+    client = client or cds_client()
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(target.suffix + ".part")
+    client.retrieve(dataset, req, str(tmp))
+    tmp.replace(target)
+    log.info("fetched %s (%.1f MiB)", target.name, target.stat().st_size / 2**20)
+    return target
+
+
 # ----------------------------------------------------------------------------- decode
 def open_seasonal(path: Path, short: str) -> xr.DataArray:
     """One downloaded file (netcdf, one field, possibly several years and the 24 ensemble/lagged
