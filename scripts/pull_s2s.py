@@ -14,16 +14,15 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
 from dokayuki.config import RegionConfig, load_indices
 from dokayuki.fetch.s2s import VARIABLES, RequestLog, build_request, ecds_client, fetch, hemi_requests, open_grib_daily
-from dokayuki.grid import area_mean
-from dokayuki.indices import all_indices
+from dokayuki import indices
+from dokayuki.indices import all_indices, sst_for_time
 from dokayuki.state import State
-from dokayuki.weekly import forecast_delta, weekly_from_member_steps
+from dokayuki.weekly import weekly_from_member_steps
 
 ROOT = Path(__file__).resolve().parents[1]; STATE = State(ROOT / "state"); RAW = ROOT / "state" / "grib"
 FIELDS_DOMAIN = ["msl", "t2m", "tp", "sf", "sst", "t850", "z500", "u850", "v850"]
@@ -124,41 +123,13 @@ def to_members(idx: xr.DataArray, req: dict, reforecast: bool) -> xr.DataArray:
 
 
 def load_sst_climatology(box, path: Path = Path("state/era5_15_daily.zarr")):
-    """(daily box-mean SST, day-of-year climatology) from the ERA5 WB2 pull, or (None, None) if it
-    isn't there -- SJI is then skipped (``all_indices(..., skip_missing=True)`` already handles sst=None)."""
-    if not path.exists():
-        log.warning("%s not found; SJI will be skipped (needs the ERA5 1.5deg pull)", path)
-        return None, None
-    ds = xr.open_zarr(path)
-    daily = area_mean(ds["sst"], box).load().rename("sst")
-    clim = daily.groupby("time.dayofyear").mean("time").rename("sst_clim_doy")
-    return daily, clim
-
-
-def sst_for_time(t: pd.DatetimeIndex, lead: int, sst_clim) -> xr.DataArray | None:
-    """Persisted-SST series (one scalar per issue, the real calendar date) for one lead's time
-    coordinate; NaN past the ERA5 pull's range rather than silently reusing a stale nearest value.
-
-    Vectorised (numpy, not per-issue ``xr.DataArray.sel``): a reforecast month's ``time`` axis
-    can carry hundreds of entries (one per hindcast year x issue), and xarray's label-based
-    ``.sel`` has enough per-call overhead that a Python loop over it dominated decode time."""
-    daily, clim = sst_clim
+    """Thin wrapper on :func:`dokayuki.indices.load_sst_climatology` that logs when SJI will be
+    skipped for lack of the ERA5 pull (kept here, not in the shared function, since only an
+    interactive pull script's operator needs the heads-up)."""
+    daily, clim = indices.load_sst_climatology(box, path)
     if daily is None:
-        return None
-    order = np.argsort(daily["time"].values)
-    dates, vals_by_date = daily["time"].values[order], daily.values[order]
-    lo, hi = dates[0], dates[-1]
-    clim_by_doy = np.full(367, np.nan)
-    clim_by_doy[clim["dayofyear"].values.astype(int)] = clim.values
-
-    obs_days = (t - pd.Timedelta(days=7)).values
-    idx = np.clip(np.searchsorted(dates, obs_days), 1, len(dates) - 1)
-    nearest = np.where(np.abs(dates[idx] - obs_days) < np.abs(dates[idx - 1] - obs_days), idx, idx - 1)
-    anom = vals_by_date[nearest] - clim_by_doy[pd.DatetimeIndex(obs_days).dayofyear.values]
-
-    target_doys = np.stack([(t + pd.Timedelta(days=i)).dayofyear.values for i in range(forecast_delta(lead), forecast_delta(lead) + 7)], axis=1)
-    persisted = clim_by_doy[target_doys].mean(axis=1) + anom
-    return xr.DataArray(np.where((obs_days < lo) | (obs_days > hi), np.nan, persisted), dims="time", coords={"time": t})
+        log.warning("%s not found; SJI will be skipped (needs the ERA5 1.5deg pull)", path)
+    return daily, clim
 
 
 def decode(parts: dict[str, Path], defs, lead_days=(19, 26), sst_clim=(None, None)) -> dict[int, xr.DataArray]:

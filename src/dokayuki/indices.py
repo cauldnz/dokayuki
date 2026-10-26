@@ -8,10 +8,12 @@ first and then the area mean is identical for linear operations.
 from __future__ import annotations
 
 import numpy as np
+import pandas as pd
 import xarray as xr
 
 from .config import IndexDef
 from .grid import LAT, LON, area_mean, cos_weights, nearest_cell
+from .weekly import forecast_delta
 
 
 def index_value(idx: IndexDef, fields: dict[str, xr.DataArray], sst: xr.DataArray | None = None,
@@ -93,11 +95,51 @@ def cold_day_precip(tp_daily: xr.DataArray, t850_daily_box_mean: xr.DataArray, t
 def persisted_sst(sst_obs_daily_box: xr.DataArray, sst_clim_doy: xr.DataArray, issue, target_week_start, lag_days: int = 7) -> float:
     """SST for SJI: the latest observed box-mean SST anomaly (at issue - lag_days) persisted onto the
     target week's climatology. ``sst_clim_doy`` is indexed by dayofyear (1..366)."""
-    import pandas as pd
     obs_day = pd.Timestamp(issue) - pd.Timedelta(days=lag_days)
     anom = float(sst_obs_daily_box.sel(time=obs_day, method="nearest")) - float(sst_clim_doy.sel(dayofyear=obs_day.dayofyear))
     doys = [(pd.Timestamp(target_week_start) + pd.Timedelta(days=i)).dayofyear for i in range(7)]
     return float(sst_clim_doy.sel(dayofyear=doys).mean()) + anom
+
+
+def load_sst_climatology(box, path="state/era5_15_daily.zarr"):
+    """(daily box-mean SST, day-of-year climatology) from the ERA5 WB2 pull, or (None, None) if it
+    isn't there -- SJI is then skipped (``all_indices(..., skip_missing=True)`` already handles
+    sst=None). Shared by every origin's reforecast decode (ECMWF via ECDS, JMA via WMC/CDS): the
+    persisted SST is always the same *observed* series, independent of which model it pairs with."""
+    from pathlib import Path
+    path = Path(path)
+    if not path.exists():
+        return None, None
+    ds = xr.open_zarr(path)
+    daily = area_mean(ds["sst"], box).load().rename("sst")
+    clim = daily.groupby("time.dayofyear").mean("time").rename("sst_clim_doy")
+    return daily, clim
+
+
+def sst_for_time(t: pd.DatetimeIndex, lead: int, sst_clim) -> xr.DataArray | None:
+    """Persisted-SST series (one scalar per issue, the real calendar date) for one lead's time
+    coordinate; NaN past the ERA5 pull's range rather than silently reusing a stale nearest value.
+
+    Vectorised (numpy, not per-issue ``xr.DataArray.sel``): a reforecast month's ``time`` axis
+    can carry hundreds of entries (one per hindcast year x issue), and xarray's label-based
+    ``.sel`` has enough per-call overhead that a Python loop over it dominates decode time."""
+    daily, clim = sst_clim
+    if daily is None:
+        return None
+    order = np.argsort(daily["time"].values)
+    dates, vals_by_date = daily["time"].values[order], daily.values[order]
+    lo, hi = dates[0], dates[-1]
+    clim_by_doy = np.full(367, np.nan)
+    clim_by_doy[clim["dayofyear"].values.astype(int)] = clim.values
+
+    obs_days = (t - pd.Timedelta(days=7)).values
+    idx = np.clip(np.searchsorted(dates, obs_days), 1, len(dates) - 1)
+    nearest = np.where(np.abs(dates[idx] - obs_days) < np.abs(dates[idx - 1] - obs_days), idx, idx - 1)
+    anom = vals_by_date[nearest] - clim_by_doy[pd.DatetimeIndex(obs_days).dayofyear.values]
+
+    target_doys = np.stack([(t + pd.Timedelta(days=i)).dayofyear.values for i in range(forecast_delta(lead), forecast_delta(lead) + 7)], axis=1)
+    persisted = clim_by_doy[target_doys].mean(axis=1) + anom
+    return xr.DataArray(np.where((obs_days < lo) | (obs_days > hi), np.nan, persisted), dims="time", coords={"time": t})
 
 
 # ----------------------------------------------------------------------------- spec update 1 ingredients
