@@ -17,8 +17,8 @@ season:
   scoring_months: [12, 1, 2]           # DJF focus
   backtest_winters: ["2016/17", "2025/26"]
   duet_validation_winter: "2016/17"
-  test_winters: ["2017/18", "2022/23"]           # tuning and model choice may look at these (nested, blocked CV)
-  locked_final_exam_winters: ["2023/24", "2024/25", "2025/26"]   # sealed; evaluated once at the end of v1
+  test_winters: ["2017/18", "2025/26"]           # unsealed 2026-10-27 at v1-frozen: the final-exam winters are now scored
+  locked_final_exam_winters: []   # were ["2023/24", "2024/25", "2025/26"]; evaluated once at v1-frozen, see docs/BACKTEST.md
 stage3:
   features:
     # spec update 1: five-stage ingredient chain as feature groups (contributions reported per group)

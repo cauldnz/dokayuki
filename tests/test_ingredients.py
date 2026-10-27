@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
+import dokayuki.experiments as experiments
 from dokayuki.config import Box, load_indices, load_stage_names
 from dokayuki.experiments import assert_not_locked
 from dokayuki.indices import ao_projection, nw_flow, sji_days, ural_blocking, zonal_mean_at
@@ -61,7 +62,10 @@ def test_effective_n_shrinks_with_autocorrelation():
     assert effective_n(white) > 350 and effective_n(ar) < effective_n(white)
 
 
-def test_locked_winters_guard_and_stages():
+def test_locked_winters_guard_and_stages(monkeypatch):
+    # the mechanism, not today's project config: v1-frozen (2026-10-27) unsealed the real
+    # locked_final_exam_winters, so this locks its own fake set rather than depending on that.
+    monkeypatch.setattr(experiments, "locked_winters", lambda: ("2022/23", "2024/25"))
     with pytest.raises(RuntimeError):
         assert_not_locked(["2022/23", "2024/25"])
     assert_not_locked(["2017/18"])
