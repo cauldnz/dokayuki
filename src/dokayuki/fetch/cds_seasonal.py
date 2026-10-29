@@ -117,10 +117,13 @@ def download(dataset: str, req: dict, target: Path, client=None) -> Path:
     already exists and is non-empty. Unlike ECDS, this client has no submit/poll/download split
     (``cdsapi``'s legacy client's ``retrieve`` does all three and blocks until done) -- measured
     2026-10-26: ~2.5 h for one field/start-date/31-years request, of which the actual transfer
-    (190 MB) was under 10 min, so the wait is server-side queueing, not bandwidth. Call this from
-    a thread pool (one client per thread; the client itself isn't documented as thread-safe) to
-    let CDS process several requests concurrently -- submitting serially would take the full
-    84-request pull the better part of a week."""
+    (190 MB) was under 10 min, so the wait is server-side queueing, not bandwidth.
+
+    Call sequentially, not from a thread pool: ECMWF's 2026-10 Data Stores service-protection
+    measures ask for sequential submission explicitly, and a parallel run here is what coincided
+    with CDS starting to 403 every request as an unaccepted-terms error despite the account's
+    licence page showing everything accepted
+    (https://forum.ecmwf.int/t/data-stores-service-protection-measures-affecting-data-downloads-and-account-access-cds-ads-ewds-ecds/15481)."""
     if target.exists() and target.stat().st_size > 0:
         return target
     from .era5 import cds_client

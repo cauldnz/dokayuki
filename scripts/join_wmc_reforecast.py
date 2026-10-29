@@ -25,10 +25,9 @@ import logging
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
-import numpy as np
 import pandas as pd
 import xarray as xr
-from dokayuki.config import RegionConfig, load_indices
+from dokayuki.config import load_indices
 from dokayuki.indices import all_indices, load_sst_climatology, sst_for_time
 from dokayuki.state import State
 from dokayuki.weekly import weekly_from_member_steps
@@ -72,7 +71,7 @@ def main() -> int:
     p.add_argument("--leads", default="19,26")
     a = p.parse_args()
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(message)s")
-    cfg, defs = RegionConfig.load(), load_indices()
+    defs = load_indices()
     sst_clim = load_sst_climatology(defs["SJI"].box)
     if sst_clim[0] is None:
         log.warning("no ERA5 SST climatology found; SJI will be all-NaN for JMA too")

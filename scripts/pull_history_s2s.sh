@@ -8,9 +8,12 @@
 #   defaults: ecmwf 2016-10-01 2023-04-30 (Duet validation winter + the seven open test winters)
 #   priority_reforecast_end (optional): pull reforecast jobs up to this month first, e.g. to get a
 #   couple of winters' reforecasts in front of a build session without waiting for all 49 months.
-#   parallel (optional): requests in flight at once on ECDS (default 4, same as pull_s2s.py);
-#   lower it if ECDS starts rejecting a high fraction of submissions (seen at 4 after ~24h of
-#   sustained load, cause unconfirmed -- a 6h pause alone did not clear it).
+#   parallel (optional): requests in flight at once on ECDS (default 1, same as pull_s2s.py, since
+#   ECMWF's 2026-10 Data Stores service-protection measures explicitly ask for sequential
+#   submission, not parallel, on pain of account suspension -- see
+#   https://forum.ecmwf.int/t/data-stores-service-protection-measures-affecting-data-downloads-and-account-access-cds-ads-ewds-ecds/15481
+#   and docs/agents/lessons-s2s-history-pull.md. The original 2016-10 history pull ran at 2 and
+#   found that a sweet spot against high rejection rates at 4, but that predates this policy.
 #   then:     .venv/bin/python scripts/state_release.py upload   # publish the decoded state for CI
 # Optional: with GITHUB_TOKEN and GITHUB_REPOSITORY set, the decoded state is uploaded as a release
 # after every loop, so progress is visible from anywhere (and nothing is lost if the box dies).

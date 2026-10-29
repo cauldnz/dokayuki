@@ -4,12 +4,21 @@ failure, covering the sealed winters' system (system 3, live Feb 2023 - Jan 2026
 Downloads one NetCDF per (field, start date) under state/cds_seasonal/, each carrying every
 requested hindcast year at once (CDS accepts a year list in one request, confirmed against the
 constraints endpoint). Each request is slow -- ~2.5 h measured for one field/date/31-years, almost
-all of it server-side queueing rather than transfer -- so requests run in a thread pool; nothing
-in cdsapi documents the client as thread-safe, so each thread gets its own.
+all of it server-side queueing rather than transfer.
+
+--parallel defaults to 1 (sequential): ECMWF's 2026-10 Data Stores service-protection measures
+explicitly ask for sequential submission, not parallel or batched, on pain of account suspension
+(https://forum.ecmwf.int/t/data-stores-service-protection-measures-affecting-data-downloads-and-account-access-cds-ads-ewds-ecds/15481).
+Found this the hard way: a 4-parallel run here coincided with CDS starting to reject every
+request with a stale-sounding "terms of use not accepted" 403 even though the account's licence
+page showed everything accepted. The thread-pool machinery is still here (nothing in cdsapi
+documents the client as thread-safe, so each thread gets its own) in case ECMWF ever publishes an
+actual per-account concurrency limit worth using, but don't raise --parallel without re-reading
+that thread first.
 
 Usage: pull_cds_seasonal.py [--fields msl,t2m,tp,sst,t850,z500,u10hpa] [--months 10,11,12,1,2,3]
                             [--end-year 2022] [--system cps3] [--max-days-lead 33]
-                            [--parallel 6] [--estimate] [--max-gb 20]
+                            [--parallel 1] [--estimate] [--max-gb 20]
 """
 import argparse
 import logging
@@ -48,7 +57,11 @@ def main() -> int:
     p.add_argument("--end-year", type=int, default=2022, help="last hindcast year before the real-time period")
     p.add_argument("--system", default="cps3", choices=sorted(cs.SYSTEM))
     p.add_argument("--max-days-lead", type=int, default=33, help="weeks 3-4 only need ~33 days, not the full 215-day seasonal range")
-    p.add_argument("--parallel", type=int, default=6, help="CDS requests in flight at once (each blocks for ~2.5h; this is queueing concurrency, not bandwidth)")
+    p.add_argument("--parallel", type=int, default=1, help="CDS requests in flight at once. ECMWF's "
+                   "2026-10 Data Stores service-protection measures explicitly ask for sequential "
+                   "submission, not parallel/batched, on pain of account suspension: "
+                   "https://forum.ecmwf.int/t/data-stores-service-protection-measures-affecting-data-downloads-and-account-access-cds-ads-ewds-ecds/15481 "
+                   "-- do not raise this without re-reading that thread first")
     p.add_argument("--estimate", action="store_true")
     p.add_argument("--max-gb", type=float, default=20.0)
     a = p.parse_args()

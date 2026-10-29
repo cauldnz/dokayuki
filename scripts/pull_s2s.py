@@ -159,7 +159,11 @@ def main():
     p.add_argument("--end", default=None); p.add_argument("--recent", action="store_true"); p.add_argument("--budget-s", type=float, default=3600)
     p.add_argument("--dry-run", action="store_true"); p.add_argument("--months", default="10,11,12,1,2,3,4")
     p.add_argument("--no-reforecasts", action="store_true"); p.add_argument("--delete-grib", action="store_true")
-    p.add_argument("--parallel", type=int, default=4, help="requests in flight at once on ECDS")
+    p.add_argument("--parallel", type=int, default=1, help="requests in flight at once on ECDS. The "
+                    "2016-10 history pull found --parallel 2 a sweet spot, but ECMWF's 2026-10 Data "
+                    "Stores service-protection measures now explicitly ask for sequential submission "
+                    "on pain of account suspension (docs/agents/lessons-s2s-history-pull.md) -- confirm "
+                    "that guidance is stale before raising this")
     p.add_argument("--priority-reforecast-end", default=None,
                     help="pull reforecast jobs with init month <= this date first, ahead of the rest of the queue")
     p.add_argument("--redecode", action="store_true",

@@ -4,7 +4,23 @@ What actually slowed the pull down, what didn't, and what to do differently next
 long-running ECDS job runs on this laptop (or wherever `ecmwf-haul` ends up living). Written
 after the pull finished (`state-20261023T193533Z`, 104 months decoded, ~8 days wall-clock).
 
-## The ECDS rejection problem
+## 2026-10-29 update: the rejection problem almost certainly wasn't a mystery after all
+
+The "root cause never identified" note below is probably wrong, or at least incomplete. On
+2026-10-29, a from-scratch ECMWF sealed-winter pull at `--parallel 2` (the sweet spot found
+below) hit a **sustained ~100% rejection rate** -- not the 50-70% ceiling seen in Oct, total
+failure to make progress -- at the same time a `--parallel 4` CDS seasonal pull started 403ing
+every request with an unaccepted-terms error despite the account's licence page showing
+everything accepted. Both cleared up when parallelism dropped. ECMWF's forum
+(https://forum.ecmwf.int/t/data-stores-service-protection-measures-affecting-data-downloads-and-account-access-cds-ads-ewds-ecds/15481,
+dated around this same window) explicitly asks for **sequential submission, not parallel or
+batched**, across CDS, ADS, EWDS and ECDS, warning that non-compliant accounts face suspension.
+Every script in this repo that submits to ECDS or CDS now defaults to `--parallel 1`. Don't
+raise it without re-reading that thread for an actual published concurrency limit first --
+the account-suspension risk is real, not hypothetical, and "it worked at 2 before" no longer
+applies now that this policy exists.
+
+## The ECDS rejection problem (pre-2026-10-29 policy; kept for the historical record)
 
 Submissions get silently `rejected` (empty `log: []`, no explanation) at a rate that depends on
 `--parallel`, not on request content — the same request resubmitted later usually succeeds.
@@ -15,9 +31,10 @@ Submissions get silently `rejected` (empty `log: []`, no explanation) at a rate 
 | 1 | Rejections dropped to ~0%, but so did throughput: ECDS's single server-side worker slot means one in-flight request serializes everything, and a slow request stalls the whole pull for the retry-sleep interval. Net progress over ~1 h: effectively zero. |
 | 2 | The sweet spot found by trial. Rejection rate settled around 5–15% over many consecutive hours, isolated to single fields rather than whole months, and the resumable design just retried past them. |
 
-**Root cause was never identified.** Working theory (unconfirmed, and the 6 h pause result argues
-against the simplest version of it): an orphaned-request backlog building up server-side.
-Don't spend time re-litigating this — go straight to `--parallel 2`.
+**Root cause was never identified** at the time. Working theory (unconfirmed, and the 6 h pause
+result argues against the simplest version of it): an orphaned-request backlog building up
+server-side. **See the 2026-10-29 update above before following this** — the "go straight to
+--parallel 2" conclusion below predates ECMWF's service-protection policy and is superseded.
 
 **The recurring false alarm:** every ~24 h, `--budget-s 86400` runs out and the wrapper's
 `while true` loop restarts the python worker. In the last 1–2 h before that boundary, the
@@ -76,7 +93,8 @@ rather than counting printed request lines.
 
 ## For next time (and for `ecmwf-haul`)
 
-1. Start at `--parallel 2`. Don't rediscover the 4→1→2 trial-and-error.
+1. Start at `--parallel 1` (sequential) per ECMWF's service-protection policy (2026-10-29 update
+   above). Don't rediscover the 4→1→2 trial-and-error below -- it predates that policy.
 2. Don't bother with a multi-hour "let it cool down" pause on a rejection spike — it didn't work
    once, and the budget-boundary explanation (see above) accounts for most of what looks alarming.
 3. Check the rejection rate against the current worker's start time before reacting to it.
